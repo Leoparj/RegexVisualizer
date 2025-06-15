@@ -1,18 +1,22 @@
+// src/features/regexTester/components/organisms/RegexTester.tsx
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import LabeledInput from '../atoms/LabeledInput';
-import HighlightedText from '../molecules/HighlightedText';
+import { Button, StyleSheet, Text, View } from 'react-native';
 import { useRegexTesterViewModel } from '../../../viewModels/useRegexTesterViewModel';
+import LabeledInput from '../atoms/LabeledInput';
 import ASTViewer from '../molecules/ASTViewer';
-
+import HighlightedText from '../molecules/HighlightedText';
+import SavedRegexList from '../molecules/SavedRegexList';
 export default function RegexTester() {
   const {
     regex,
     input,
     ast,
+    savedExpressions,
     setRegex,
     setInput,
     handleTestRegex,
+    handleSaveRegex,
+    handleDeleteRegex, // ✅ Importa el método de eliminar
   } = useRegexTesterViewModel();
 
   return (
@@ -38,11 +42,21 @@ export default function RegexTester() {
         }}
       />
 
+      <Button title="Guardar Expresión" onPress={handleSaveRegex} />
+
       <Text style={styles.label}>Texto con coincidencias resaltadas:</Text>
       <HighlightedText text={input} pattern={regex} />
 
-      <Text style={styles.label}>Árbol de Sintaxis Abstracta (AST):</Text>
       <ASTViewer ast={ast} />
+
+      <SavedRegexList
+        expressions={savedExpressions}
+        onDelete={handleDeleteRegex}
+        onSelect={(expr) => {
+          setRegex(expr);
+          handleTestRegex(expr, input);
+        }}
+      />
     </View>
   );
 }
