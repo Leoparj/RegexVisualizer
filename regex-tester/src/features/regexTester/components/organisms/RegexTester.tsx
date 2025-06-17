@@ -19,6 +19,7 @@ export default function RegexTester() {
     handleTestRegex,
     handleSaveRegex,
     handleDeleteRegex,
+    handleEditRegex, // ✅ asegúrate de que esté aquí
   } = useRegexTesterViewModel();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,6 +63,7 @@ export default function RegexTester() {
       <SavedRegexList
         expressions={filteredExpressions}
         onDelete={handleDeleteRegex}
+        onEdit={handleEditRegex} // ✅ asegúrate de pasarla también aquí
         onSelect={(expr) => {
           setRegex(expr);
           handleTestRegex(expr, input);

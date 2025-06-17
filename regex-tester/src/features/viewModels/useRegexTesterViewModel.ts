@@ -58,6 +58,16 @@ export function useRegexTesterViewModel() {
     await saveExpressionsToStorage(updated);
   };
 
+  const handleEditRegex = async (oldExpr: string, newExpr: string) => {
+    if (!newExpr || savedExpressions.includes(newExpr)) return;
+
+    const updated = savedExpressions.map(expr =>
+      expr === oldExpr ? newExpr : expr
+    );
+    setSavedExpressions(updated);
+    await AsyncStorage.setItem('savedRegexes', JSON.stringify(updated));
+  };
+
   return {
     regex,
     input,
@@ -68,5 +78,6 @@ export function useRegexTesterViewModel() {
     handleTestRegex,
     handleSaveRegex,
     handleDeleteRegex,
+    handleEditRegex,
   };
 }

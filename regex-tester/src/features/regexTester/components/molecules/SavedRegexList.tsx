@@ -1,22 +1,16 @@
-import React from 'react';
-import {
-    Alert,
-    Button,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+// src/features/regexTester/components/molecules/SavedRegexList.tsx
+import { Alert, Button, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function SavedRegexList({
   expressions,
   onDelete,
   onSelect,
+  onEdit, // nuevo
 }: {
   expressions: string[];
   onDelete: (expr: string) => void;
   onSelect: (expr: string) => void;
+  onEdit: (oldExpr: string, newExpr: string) => void; // nuevo
 }) {
   const confirmDelete = (expr: string) => {
     if (Platform.OS === 'web') {
@@ -34,6 +28,36 @@ export default function SavedRegexList({
     }
   };
 
+  const promptEdit = (expr: string) => {
+    if (Platform.OS === 'web') {
+      const edited = window.prompt('Editar expresión:', expr);
+      if (edited && edited !== expr) {
+        onEdit(expr, edited.trim());
+      }
+    } else {
+      Alert.prompt?.(
+        'Editar expresión',
+        'Modifica la expresión guardada:',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Guardar',
+            onPress: (edited) => {
+              if (edited && edited !== expr) {
+                onEdit(expr, edited.trim());
+              }
+            },
+          },
+        ],
+        'plain-text',
+        expr
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Expresiones Guardadas:</Text>
@@ -42,6 +66,7 @@ export default function SavedRegexList({
           <Pressable onPress={() => onSelect(expr)} style={styles.textPress}>
             <Text style={styles.expr}>{expr}</Text>
           </Pressable>
+          <Button title="Editar" onPress={() => promptEdit(expr)} />
           <Button title="Eliminar" onPress={() => confirmDelete(expr)} />
         </View>
       ))}
