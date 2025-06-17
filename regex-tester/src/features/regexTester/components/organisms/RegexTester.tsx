@@ -1,11 +1,13 @@
 // src/features/regexTester/components/organisms/RegexTester.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import { useRegexTesterViewModel } from '../../../viewModels/useRegexTesterViewModel';
 import LabeledInput from '../atoms/LabeledInput';
+import RegexSearchBar from '../atoms/RegexSearchBar';
 import ASTViewer from '../molecules/ASTViewer';
 import HighlightedText from '../molecules/HighlightedText';
 import SavedRegexList from '../molecules/SavedRegexList';
+
 export default function RegexTester() {
   const {
     regex,
@@ -16,8 +18,14 @@ export default function RegexTester() {
     setInput,
     handleTestRegex,
     handleSaveRegex,
-    handleDeleteRegex, // ✅ Importa el método de eliminar
+    handleDeleteRegex,
   } = useRegexTesterViewModel();
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredExpressions = savedExpressions.filter((expr) =>
+    expr.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <View style={styles.container}>
@@ -49,8 +57,10 @@ export default function RegexTester() {
 
       <ASTViewer ast={ast} />
 
+      <RegexSearchBar value={searchTerm} onChange={setSearchTerm} />
+
       <SavedRegexList
-        expressions={savedExpressions}
+        expressions={filteredExpressions}
         onDelete={handleDeleteRegex}
         onSelect={(expr) => {
           setRegex(expr);
