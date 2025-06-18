@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import React from 'react';
 import {
   Alert,
@@ -47,7 +49,10 @@ export default function SavedRegexList({
         'Editar expresión',
         'Modifica la expresión guardada:',
         [
-          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
           {
             text: 'Guardar',
             onPress: (edited) => {
@@ -63,6 +68,23 @@ export default function SavedRegexList({
     }
   };
 
+  const handleShare = async (expr: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        alert(`Expresión copiada:\n\n${expr}`);
+        await navigator.clipboard.writeText(expr);
+        return;
+      }
+
+      const fileUri = `${FileSystem.cacheDirectory}expression.txt`;
+      await FileSystem.writeAsStringAsync(fileUri, expr);
+      await Sharing.shareAsync(fileUri);
+    } catch (e) {
+      console.error('Error al compartir expresión:', e);
+      Alert.alert('Error', 'No se pudo compartir la expresión.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Expresiones Guardadas:</Text>
@@ -73,6 +95,7 @@ export default function SavedRegexList({
           </Pressable>
           <Button title="Editar" onPress={() => promptEdit(expr)} />
           <Button title="Eliminar" onPress={() => confirmDelete(expr)} />
+          <Button title="Compartir" onPress={() => handleShare(expr)} />
         </View>
       ))}
     </View>
@@ -86,6 +109,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   expr: {
     flex: 1,

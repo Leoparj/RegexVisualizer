@@ -2,7 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { parseRegexToAST } from '../services/regexParser';
-import { exportRegexesToFile, importRegexesFromFile } from '../services/regexStorage';
+import {
+  exportRegexesToFile,
+  importRegexesFromFile,
+  shareSingleRegex,
+} from '../services/regexStorage';
 
 const STORAGE_KEY = 'savedExpressions';
 
@@ -98,6 +102,19 @@ export function useRegexTesterViewModel() {
     }
   };
 
+  const handleShareRegex = async (expression: string) => {
+    try {
+      await shareSingleRegex(expression);
+    } catch (e) {
+      console.error('Error al compartir:', e);
+      if (Platform.OS === 'web') {
+        alert('Compartir no está disponible en web.');
+      } else {
+        Alert.alert('Error', 'No se pudo compartir la expresión.');
+      }
+    }
+  };
+
   return {
     regex,
     input,
@@ -111,5 +128,6 @@ export function useRegexTesterViewModel() {
     handleEditRegex,
     handleExportRegexes,
     handleImportRegexes,
+    handleShareRegex, // ✅ agregado aquí
   };
 }
