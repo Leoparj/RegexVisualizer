@@ -1,7 +1,8 @@
-// src/features/viewModels/useRegexTesterViewModel.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
+import { Alert, Platform } from 'react-native';
 import { parseRegexToAST } from '../services/regexParser';
+import { exportRegexesToFile, importRegexesFromFile } from '../services/regexStorage';
 
 const STORAGE_KEY = 'savedExpressions';
 
@@ -11,7 +12,6 @@ export function useRegexTesterViewModel() {
   const [ast, setAST] = useState<any>(null);
   const [savedExpressions, setSavedExpressions] = useState<string[]>([]);
 
-  // Cargar expresiones al inicio
   useEffect(() => {
     const loadExpressions = async () => {
       try {
@@ -23,7 +23,6 @@ export function useRegexTesterViewModel() {
         console.error('Error al cargar las expresiones guardadas:', e);
       }
     };
-
     loadExpressions();
   }, []);
 
@@ -65,7 +64,38 @@ export function useRegexTesterViewModel() {
       expr === oldExpr ? newExpr : expr
     );
     setSavedExpressions(updated);
-    await AsyncStorage.setItem('savedRegexes', JSON.stringify(updated));
+    await saveExpressionsToStorage(updated);
+  };
+
+  const handleExportRegexes = async () => {
+    try {
+      await exportRegexesToFile(savedExpressions);
+    } catch (e) {
+      console.error('Error al exportar:', e);
+      if (Platform.OS === 'web') {
+        alert('Exportación no soportada en web. Usa un dispositivo móvil.');
+      } else {
+        Alert.alert('Error', 'No se pudo exportar las expresiones.');
+      }
+    }
+  };
+
+  const handleImportRegexes = async () => {
+    try {
+      const imported = await importRegexesFromFile();
+      if (imported) {
+        const unique = Array.from(new Set([...savedExpressions, ...imported]));
+        setSavedExpressions(unique);
+        await saveExpressionsToStorage(unique);
+      }
+    } catch (e) {
+      console.error('Error al importar:', e);
+      if (Platform.OS === 'web') {
+        alert('Importación no soportada en web. Usa un dispositivo móvil.');
+      } else {
+        Alert.alert('Error', 'No se pudo importar las expresiones.');
+      }
+    }
   };
 
   return {
@@ -79,5 +109,7 @@ export function useRegexTesterViewModel() {
     handleSaveRegex,
     handleDeleteRegex,
     handleEditRegex,
+    handleExportRegexes,
+    handleImportRegexes,
   };
 }

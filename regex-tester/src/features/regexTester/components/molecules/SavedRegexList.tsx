@@ -1,16 +1,24 @@
-// src/features/regexTester/components/molecules/SavedRegexList.tsx
-import { Alert, Button, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import {
+  Alert,
+  Button,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 export default function SavedRegexList({
   expressions,
   onDelete,
   onSelect,
-  onEdit, // nuevo
+  onEdit,
 }: {
   expressions: string[];
   onDelete: (expr: string) => void;
   onSelect: (expr: string) => void;
-  onEdit: (oldExpr: string, newExpr: string) => void; // nuevo
+  onEdit: (oldExpr: string, newExpr: string) => void;
 }) {
   const confirmDelete = (expr: string) => {
     if (Platform.OS === 'web') {
@@ -39,10 +47,7 @@ export default function SavedRegexList({
         'Editar expresión',
         'Modifica la expresión guardada:',
         [
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-          },
+          { text: 'Cancelar', style: 'cancel' },
           {
             text: 'Guardar',
             onPress: (edited) => {

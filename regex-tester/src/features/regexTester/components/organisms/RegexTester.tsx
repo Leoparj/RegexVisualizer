@@ -19,7 +19,9 @@ export default function RegexTester() {
     handleTestRegex,
     handleSaveRegex,
     handleDeleteRegex,
-    handleEditRegex, // ✅ asegúrate de que esté aquí
+    handleEditRegex,
+    handleExportRegexes,
+    handleImportRegexes,
   } = useRegexTesterViewModel();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +53,11 @@ export default function RegexTester() {
         }}
       />
 
-      <Button title="Guardar Expresión" onPress={handleSaveRegex} />
+      <View style={styles.buttonGroup}>
+        <Button title="Guardar Expresión" onPress={handleSaveRegex} />
+        <Button title="Exportar Expresiones" onPress={handleExportRegexes} />
+        <Button title="Importar Expresiones" onPress={handleImportRegexes} />
+      </View>
 
       <Text style={styles.label}>Texto con coincidencias resaltadas:</Text>
       <HighlightedText text={input} pattern={regex} />
@@ -63,7 +69,7 @@ export default function RegexTester() {
       <SavedRegexList
         expressions={filteredExpressions}
         onDelete={handleDeleteRegex}
-        onEdit={handleEditRegex} // ✅ asegúrate de pasarla también aquí
+        onEdit={handleEditRegex}
         onSelect={(expr) => {
           setRegex(expr);
           handleTestRegex(expr, input);
@@ -83,5 +89,10 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: 'bold',
     marginTop: 20,
+  },
+  buttonGroup: {
+    marginTop: 10,
+    marginBottom: 10,
+    gap: 8,
   },
 });

@@ -1,4 +1,3 @@
-// src/features/regexTester/components/atoms/RegexSearchBar.tsx
 import React from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 

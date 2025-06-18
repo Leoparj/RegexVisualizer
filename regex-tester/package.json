@@ -39,7 +39,10 @@
     "react-native-webview": "13.13.5",
     "regexpp": "^3.2.0",
     "uuid": "^11.1.0",
-    "@react-native-async-storage/async-storage": "2.1.2"
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "expo-document-picker": "~13.1.5",
+    "expo-sharing": "~13.1.5",
+    "expo-file-system": "~18.1.10"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
