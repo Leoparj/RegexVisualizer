@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { parseRegexToAST } from '../services/regexParser';
 import {
@@ -8,126 +8,177 @@ import {
   shareSingleRegex,
 } from '../services/regexStorage';
 
-const STORAGE_KEY = 'savedExpressions';
+const STORAGE_KEY_SAVED     = 'savedExpressions';
+const STORAGE_KEY_HISTORY   = 'regexHistory';
+const STORAGE_KEY_FAVORITES = 'regexFavorites';
 
 export function useRegexTesterViewModel() {
-  const [regex, setRegex] = useState('');
-  const [input, setInput] = useState('');
-  const [ast, setAST] = useState<any>(null);
-  const [savedExpressions, setSavedExpressions] = useState<string[]>([]);
+  /* ---------------- estados principales ---------------- */
+  const [regex,  setRegex ] = useState('');
+  const [input,  setInput ] = useState('');
+  const [ast,    setAST   ] = useState<any>(null);
 
+  const [savedExpressions, setSavedExpressions] = useState<string[]>([]);
+  const [history,          setHistory         ] = useState<string[]>([]);
+  const [favorites,        setFavorites       ] = useState<string[]>([]);
+
+  /* -------------- carga inicial desde AsyncStorage -------------- */
   useEffect(() => {
-    const loadExpressions = async () => {
+    (async () => {
       try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          setSavedExpressions(JSON.parse(saved));
-        }
+        const [saved, hist, favs] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEY_SAVED),
+          AsyncStorage.getItem(STORAGE_KEY_HISTORY),
+          AsyncStorage.getItem(STORAGE_KEY_FAVORITES),
+        ]);
+        if (saved) setSavedExpressions(JSON.parse(saved));
+        if (hist)  setHistory(JSON.parse(hist));
+        if (favs)  setFavorites(JSON.parse(favs));
       } catch (e) {
-        console.error('Error al cargar las expresiones guardadas:', e);
+        console.error('Error al cargar datos:', e);
       }
-    };
-    loadExpressions();
+    })();
   }, []);
 
-  const saveExpressionsToStorage = async (expressions: string[]) => {
+  /* ---------------- helper de persistencia ---------------- */
+  const saveToStorage = async (
+    key: string,
+    data: string[],
+    setter: (v: string[]) => void
+  ) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(expressions));
+      await AsyncStorage.setItem(key, JSON.stringify(data));
+      setter(data);
     } catch (e) {
-      console.error('Error al guardar las expresiones:', e);
+      console.error(`Error guardando ${key}:`, e);
     }
   };
 
-  const handleTestRegex = (newRegex: string, newInput: string) => {
-    try {
-      const astResult = parseRegexToAST(newRegex);
-      setAST(astResult);
-    } catch {
-      setAST(null);
+  /* ------ refs para historial automático ------ */
+  const latestRegexRef = useRef('');                 // <--- NUEVO
+  const intervalRef    = useRef<NodeJS.Timeout | null>(null);
+  const idleRef        = useRef<NodeJS.Timeout | null>(null);
+
+  const startHistoryInterval = () => {
+    if (!intervalRef.current) {
+      intervalRef.current = setInterval(() => {
+        const currentRegex = latestRegexRef.current.trim();
+        setHistory(prev => {
+          if (!currentRegex ||
+              prev[0] === currentRegex ||   // evita duplicados consecutivos
+              prev.includes(currentRegex))  // evita duplicados generales
+            return prev;
+
+          const updated = [currentRegex, ...prev];
+          AsyncStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(updated));
+          return updated;
+        });
+      }, 5000);
     }
+
+    if (idleRef.current) clearTimeout(idleRef.current);
+    idleRef.current = setTimeout(() => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }, 10_000);
   };
 
-  const handleSaveRegex = async () => {
+  /* --------- actualización global (input / regex) ---------- */
+  const handleRegexInput = (newRegex: string, newInput: string) => {
+    setRegex(newRegex);
+    setInput(newInput);
+    latestRegexRef.current = newRegex;       // <--- NUEVO
+
+    try { setAST(parseRegexToAST(newRegex)); }
+    catch { setAST(null); }
+
+    startHistoryInterval();                  // ← ya no pasa parámetro
+  };
+
+  /* ---------------- favoritos y CRUD básicos ---------------- */
+  const toggleFavorite = (expr: string) => {
+    const updated = favorites.includes(expr)
+      ? favorites.filter(e => e !== expr)
+      : [...favorites, expr];
+    saveToStorage(STORAGE_KEY_FAVORITES, updated, setFavorites);
+  };
+
+  const handleSaveRegex = () => {
     if (regex && !savedExpressions.includes(regex)) {
-      const updated = [...savedExpressions, regex];
-      setSavedExpressions(updated);
-      await saveExpressionsToStorage(updated);
+      saveToStorage(
+        STORAGE_KEY_SAVED,
+        [...savedExpressions, regex],
+        setSavedExpressions
+      );
     }
   };
 
-  const handleDeleteRegex = async (expressionToDelete: string) => {
-    const updated = savedExpressions.filter(expr => expr !== expressionToDelete);
-    setSavedExpressions(updated);
-    await saveExpressionsToStorage(updated);
-  };
-
-  const handleEditRegex = async (oldExpr: string, newExpr: string) => {
-    if (!newExpr || savedExpressions.includes(newExpr)) return;
-
-    const updated = savedExpressions.map(expr =>
-      expr === oldExpr ? newExpr : expr
+  const handleDeleteRegex = (expr: string) =>
+    saveToStorage(
+      STORAGE_KEY_SAVED,
+      savedExpressions.filter(e => e !== expr),
+      setSavedExpressions
     );
-    setSavedExpressions(updated);
-    await saveExpressionsToStorage(updated);
+
+  const handleEditRegex = (oldExpr: string, newExpr: string) => {
+    if (!newExpr || savedExpressions.includes(newExpr)) return;
+    const updated = savedExpressions.map(e => (e === oldExpr ? newExpr : e));
+    saveToStorage(STORAGE_KEY_SAVED, updated, setSavedExpressions);
   };
 
-  const handleExportRegexes = async () => {
-    try {
-      await exportRegexesToFile(savedExpressions);
-    } catch (e) {
-      console.error('Error al exportar:', e);
-      if (Platform.OS === 'web') {
-        alert('Exportación no soportada en web. Usa un dispositivo móvil.');
-      } else {
-        Alert.alert('Error', 'No se pudo exportar las expresiones.');
-      }
-    }
+  /* -------- limpiar historial (mantiene favoritos) -------- */
+  const handleClearHistory = () => {
+    const kept = history.filter(e => favorites.includes(e));
+    saveToStorage(STORAGE_KEY_HISTORY, kept, setHistory);
   };
 
-  const handleImportRegexes = async () => {
-    try {
-      const imported = await importRegexesFromFile();
-      if (imported) {
+  /* ------------------- export / import / share ------------------- */
+  const handleExportRegexes = () =>
+    exportRegexesToFile(savedExpressions).catch(() =>
+      Platform.OS === 'web'
+        ? alert('Exportación no soportada en web.')
+        : Alert.alert('Error', 'No se pudo exportar.')
+    );
+
+  const handleImportRegexes = () =>
+    importRegexesFromFile()
+      .then(imported => {
+        if (!imported) return;
         const unique = Array.from(new Set([...savedExpressions, ...imported]));
-        setSavedExpressions(unique);
-        await saveExpressionsToStorage(unique);
-      }
-    } catch (e) {
-      console.error('Error al importar:', e);
-      if (Platform.OS === 'web') {
-        alert('Importación no soportada en web. Usa un dispositivo móvil.');
-      } else {
-        Alert.alert('Error', 'No se pudo importar las expresiones.');
-      }
-    }
-  };
+        saveToStorage(STORAGE_KEY_SAVED, unique, setSavedExpressions);
+      })
+      .catch(() =>
+        Platform.OS === 'web'
+          ? alert('Importación no soportada en web.')
+          : Alert.alert('Error', 'No se pudo importar.')
+      );
 
-  const handleShareRegex = async (expression: string) => {
-    try {
-      await shareSingleRegex(expression);
-    } catch (e) {
-      console.error('Error al compartir:', e);
-      if (Platform.OS === 'web') {
-        alert('Compartir no está disponible en web.');
-      } else {
-        Alert.alert('Error', 'No se pudo compartir la expresión.');
-      }
-    }
-  };
+  const handleShareRegex = (expr: string) =>
+    shareSingleRegex(expr).catch(() =>
+      Platform.OS === 'web'
+        ? alert('Compartir no disponible en web.')
+        : Alert.alert('Error', 'No se pudo compartir.')
+    );
 
+  /* --------------------------- retorno --------------------------- */
   return {
-    regex,
-    input,
-    ast,
-    savedExpressions,
-    setRegex,
-    setInput,
-    handleTestRegex,
+    regex, input, ast,
+    savedExpressions, history, favorites,
+
+    /* setters utilitarios */
+    setRegex, setInput,
+
+    /* funciones expuestas */
+    handleRegexInput,
     handleSaveRegex,
     handleDeleteRegex,
     handleEditRegex,
     handleExportRegexes,
     handleImportRegexes,
-    handleShareRegex, // ✅ agregado aquí
+    handleShareRegex,
+    toggleFavorite,
+    handleClearHistory,
   };
 }

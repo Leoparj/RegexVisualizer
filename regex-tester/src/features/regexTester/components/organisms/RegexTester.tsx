@@ -1,98 +1,233 @@
-// src/features/regexTester/components/organisms/RegexTester.tsx
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import {
+  Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView,
+  StyleSheet, Text, TouchableWithoutFeedback, View, useColorScheme,
+} from 'react-native';
+
 import { useRegexTesterViewModel } from '../../../viewModels/useRegexTesterViewModel';
 import LabeledInput from '../atoms/LabeledInput';
 import RegexSearchBar from '../atoms/RegexSearchBar';
 import ASTViewer from '../molecules/ASTViewer';
 import HighlightedText from '../molecules/HighlightedText';
-import SavedRegexList from '../molecules/SavedRegexList';
 
 export default function RegexTester() {
+  /* ── theming ───────────────────────────────────────────────────────────── */
+  const isDark = useColorScheme() === 'dark';
+  const styles = createStyles(isDark);
+
+  /* ── view-model ─────────────────────────────────────────────────────────── */
   const {
-    regex,
-    input,
-    ast,
-    savedExpressions,
-    setRegex,
-    setInput,
-    handleTestRegex,
-    handleSaveRegex,
-    handleDeleteRegex,
-    handleEditRegex,
-    handleExportRegexes,
-    handleImportRegexes,
+    /* estado */
+    regex, input, ast,
+    savedExpressions, history, favorites,
+
+    /* acciones */
+    handleRegexInput,
+    handleSaveRegex, handleDeleteRegex, handleEditRegex,
+    handleExportRegexes, handleImportRegexes,
+    handleClearHistory,
+    toggleFavorite,
   } = useRegexTesterViewModel();
 
+  /* ── estado local de UI ────────────────────────────────────────────────── */
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredExpressions = savedExpressions.filter((expr) =>
-    expr.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  /* ── helpers ───────────────────────────────────────────────────────────── */
+  const renderList = (
+    title: string,
+    expressions: string[],
+    allowDelete = false,
+  ) => {
+    const filtered = expressions.filter(e =>
+      e.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+    if (!filtered.length) return null;
 
-  return (
-    <View style={styles.container}>
+    return (
+      <View style={styles.listContainer}>
+        {/* título + botón borrar historial */}
+        <View style={styles.listHeader}>
+          <Text style={styles.listTitle}>{title}</Text>
+          {title.includes('Historial') && filtered.length > 0 && (
+            <Pressable onPress={handleClearHistory}>
+              <MaterialIcons name="delete-sweep" size={22} color={isDark ? '#ff8a65' : '#d32f2f'} />
+            </Pressable>
+          )}
+        </View>
+
+        {filtered.map((expr, idx) => (
+          <View key={`${title}-${idx}`} style={styles.listItem}>
+            <Pressable
+              style={styles.expressionWrapper}
+              onPress={() => handleRegexInput(expr, input)}
+            >
+              <Text style={styles.expressionText}>{expr}</Text>
+            </Pressable>
+
+            {/* toggle favorito */}
+            <Pressable onPress={() => toggleFavorite(expr)}>
+              <MaterialIcons
+                name={favorites.includes(expr) ? 'star' : 'star-border'}
+                size={22}
+                color="#FFD700"
+              />
+            </Pressable>
+
+            {/* eliminar (sólo lista guardadas) */}
+            {allowDelete && (
+              <Pressable onPress={() => handleDeleteRegex(expr)}>
+                <MaterialIcons name="delete" size={22} color="#f44336" />
+              </Pressable>
+            )}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  /* ── main scroll content ───────────────────────────────────────────────── */
+  const content = (
+    <ScrollView
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* entrada expresión */}
       <LabeledInput
         label="Expresión Regular:"
         placeholder="Ej. \\d+"
         value={regex}
-        onChangeText={(text) => {
-          setRegex(text);
-          handleTestRegex(text, input);
-        }}
+        onChangeText={text => handleRegexInput(text, input)}
+        dark={isDark}
       />
 
+      {/* texto de prueba */}
       <LabeledInput
         label="Texto de prueba:"
         placeholder="Escribe aquí..."
         value={input}
         multiline
-        onChangeText={(text) => {
-          setInput(text);
-          handleTestRegex(regex, text);
-        }}
+        onChangeText={txt => handleRegexInput(regex, txt)}
+        dark={isDark}
       />
 
+      {/* botones principales */}
       <View style={styles.buttonGroup}>
-        <Button title="Guardar Expresión" onPress={handleSaveRegex} />
-        <Button title="Exportar Expresiones" onPress={handleExportRegexes} />
-        <Button title="Importar Expresiones" onPress={handleImportRegexes} />
+        {[
+          { icon: 'save', text: 'Guardar', onPress: handleSaveRegex },
+          { icon: 'file-upload', text: 'Exportar', onPress: handleExportRegexes },
+          { icon: 'file-download', text: 'Importar', onPress: handleImportRegexes },
+        ].map(btn => (
+          <Pressable key={btn.text} style={styles.iconButton} onPress={btn.onPress}>
+            <MaterialIcons name={btn.icon as any} size={20} color="#fff" />
+            <Text style={styles.iconButtonText}>{btn.text}</Text>
+          </Pressable>
+        ))}
       </View>
 
-      <Text style={styles.label}>Texto con coincidencias resaltadas:</Text>
-      <HighlightedText text={input} pattern={regex} />
+      {/* coincidencias */}
+      <View style={styles.matchCard}>
+        <Text style={styles.matchCardTitle}>Texto con coincidencias resaltadas:</Text>
+        <HighlightedText
+          text={input}
+          pattern={regex}
+          highlightColor="#ff0"
+          dark={isDark}
+        />
+      </View>
 
-      <ASTViewer ast={ast} />
+      {/* AST */}
+      <ASTViewer ast={ast} dark={isDark} />
 
-      <RegexSearchBar value={searchTerm} onChange={setSearchTerm} />
+      {/* buscador */}
+      <RegexSearchBar value={searchTerm} onChange={setSearchTerm} dark={isDark} />
 
-      <SavedRegexList
-        expressions={filteredExpressions}
-        onDelete={handleDeleteRegex}
-        onEdit={handleEditRegex}
-        onSelect={(expr) => {
-          setRegex(expr);
-          handleTestRegex(expr, input);
-        }}
-      />
-    </View>
+      {/* listas */}
+      {renderList('⭐ Favoritas', favorites)}
+      {renderList('🕘 Historial', history)}
+      {renderList('💾 Guardadas', savedExpressions, true)}
+    </ScrollView>
+  );
+
+  /* ── envoltorio móvil/web (cierre teclado) ─────────────────────────────── */
+  return Platform.OS === 'web' ? (
+    <View style={styles.container}>{content}</View>
+  ) : (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        {content}
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    paddingTop: 50,
-    backgroundColor: '#fff',
-  },
-  label: {
-    fontWeight: 'bold',
-    marginTop: 20,
-  },
-  buttonGroup: {
-    marginTop: 10,
-    marginBottom: 10,
-    gap: 8,
-  },
-});
+/* ── estilos ─────────────────────────────────────────────────────────────── */
+const createStyles = (dark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: dark ? '#121212' : '#fff',
+    },
+    scrollContent: {
+      padding: 20,
+      paddingTop: 50,
+      paddingBottom: 100,
+    },
+
+    /* botones */
+    buttonGroup: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 12,
+      marginVertical: 12,
+    },
+    iconButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#4CAF50',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+    },
+    iconButtonText: { color: '#fff', fontSize: 14, marginLeft: 6 },
+
+    /* coincidencias */
+    matchCard: {
+      backgroundColor: dark ? '#333' : '#fff',
+      padding: 12,
+      borderRadius: 8,
+      marginTop: 12,
+    },
+    matchCardTitle: {
+      fontWeight: 'bold',
+      marginBottom: 6,
+      color: dark ? '#fff' : '#000',
+    },
+
+    /* listas */
+    listContainer: { marginTop: 24 },
+    listHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    listTitle: {
+      fontWeight: 'bold',
+      fontSize: 16,
+      color: dark ? '#fff' : '#000',
+    },
+    listItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+      borderColor: dark ? '#555' : '#ccc',
+    },
+    expressionWrapper: { flex: 1, marginRight: 8 },
+    expressionText: { fontSize: 15, color: dark ? '#fff' : '#000' },
+  });

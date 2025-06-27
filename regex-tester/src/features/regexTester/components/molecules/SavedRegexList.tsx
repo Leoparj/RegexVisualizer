@@ -1,9 +1,16 @@
+<<<<<<< Updated upstream
+=======
+import { MaterialIcons } from '@expo/vector-icons';
+>>>>>>> Stashed changes
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import React from 'react';
 import {
   Alert,
+<<<<<<< Updated upstream
   Button,
+=======
+>>>>>>> Stashed changes
   Platform,
   Pressable,
   StyleSheet,
@@ -16,11 +23,19 @@ export default function SavedRegexList({
   onDelete,
   onSelect,
   onEdit,
+<<<<<<< Updated upstream
+=======
+  dark = false,
+>>>>>>> Stashed changes
 }: {
   expressions: string[];
   onDelete: (expr: string) => void;
   onSelect: (expr: string) => void;
   onEdit: (oldExpr: string, newExpr: string) => void;
+<<<<<<< Updated upstream
+=======
+  dark?: boolean;
+>>>>>>> Stashed changes
 }) {
   const confirmDelete = (expr: string) => {
     if (Platform.OS === 'web') {
@@ -49,10 +64,7 @@ export default function SavedRegexList({
         'Editar expresión',
         'Modifica la expresión guardada:',
         [
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-          },
+          { text: 'Cancelar', style: 'cancel' },
           {
             text: 'Guardar',
             onPress: (edited) => {
@@ -85,6 +97,11 @@ export default function SavedRegexList({
     }
   };
 
+<<<<<<< Updated upstream
+=======
+  const styles = createStyles(dark);
+
+>>>>>>> Stashed changes
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Expresiones Guardadas:</Text>
@@ -93,15 +110,33 @@ export default function SavedRegexList({
           <Pressable onPress={() => onSelect(expr)} style={styles.textPress}>
             <Text style={styles.expr}>{expr}</Text>
           </Pressable>
+<<<<<<< Updated upstream
           <Button title="Editar" onPress={() => promptEdit(expr)} />
           <Button title="Eliminar" onPress={() => confirmDelete(expr)} />
           <Button title="Compartir" onPress={() => handleShare(expr)} />
+=======
+
+          <View style={styles.actions}>
+            <Pressable onPress={() => promptEdit(expr)} style={[styles.actionBtn, styles.edit]}>
+              <MaterialIcons name="edit" size={18} color="#fff" />
+            </Pressable>
+
+            <Pressable onPress={() => confirmDelete(expr)} style={[styles.actionBtn, styles.delete]}>
+              <MaterialIcons name="delete" size={18} color="#fff" />
+            </Pressable>
+
+            <Pressable onPress={() => handleShare(expr)} style={[styles.actionBtn, styles.share]}>
+              <MaterialIcons name="share" size={18} color="#fff" />
+            </Pressable>
+          </View>
+>>>>>>> Stashed changes
         </View>
       ))}
     </View>
   );
 }
 
+<<<<<<< Updated upstream
 const styles = StyleSheet.create({
   container: { marginTop: 30 },
   title: { fontWeight: 'bold', marginBottom: 10 },
@@ -120,3 +155,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+=======
+const createStyles = (dark: boolean) =>
+  StyleSheet.create({
+    container: { marginTop: 30 },
+    title: {
+      fontWeight: 'bold',
+      marginBottom: 10,
+      fontSize: 16,
+      color: dark ? '#fff' : '#000',
+    },
+    item: {
+      marginBottom: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: dark ? '#333' : '#f5f5f5',
+      borderRadius: 8,
+      padding: 10,
+    },
+    expr: {
+      fontSize: 14,
+      color: dark ? '#fff' : '#000',
+    },
+    textPress: {
+      flex: 1,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: 6,
+      marginLeft: 10,
+    },
+    actionBtn: {
+      padding: 6,
+      borderRadius: 6,
+    },
+    edit: {
+      backgroundColor: '#2196F3',
+    },
+    delete: {
+      backgroundColor: '#f44336',
+    },
+    share: {
+      backgroundColor: '#9c27b0',
+    },
+  });
+>>>>>>> Stashed changes

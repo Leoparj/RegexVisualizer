@@ -1,41 +1,58 @@
+// src/features/regexTester/components/atoms/LabeledInput.tsx
 import React from 'react';
-import { Text, TextInput, View, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-type Props = {
+export default function LabeledInput({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  multiline = false,
+  dark = false,
+}: {
   label: string;
   value: string;
+  onChangeText: (text: string) => void;
   placeholder?: string;
   multiline?: boolean;
-  onChangeText: (text: string) => void;
-};
-
-export default function LabeledInput({ label, value, placeholder, multiline = false, onChangeText }: Props) {
+  dark?: boolean;
+}) {
+  const styles = createStyles(dark);
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
-        style={styles.input}
-        placeholder={placeholder}
+        style={[styles.input, multiline && styles.multiline]}
         value={value}
         onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={dark ? '#ccc' : '#888'}
         multiline={multiline}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 20,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 10,
-  },
-});
+const createStyles = (dark: boolean) =>
+  StyleSheet.create({
+    container: {
+      marginBottom: 10,
+    },
+    label: {
+      fontWeight: 'bold',
+      marginBottom: 4,
+      color: dark ? '#fff' : '#000',
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: dark ? '#666' : '#ccc',
+      borderRadius: 6,
+      padding: 8,
+      color: dark ? '#fff' : '#000',
+      backgroundColor: dark ? '#1e1e1e' : '#fff',
+    },
+    multiline: {
+      minHeight: 60,
+      textAlignVertical: 'top',
+    },
+  });

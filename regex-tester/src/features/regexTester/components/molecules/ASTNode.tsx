@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, StyleSheet, Pressable } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function ASTNode({ node }: { node: any }) {
     const [expanded, setExpanded] = useState(true);
