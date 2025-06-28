@@ -1,8 +1,17 @@
+// src/features/regexTester/components/organisms/RegexTester.tsx
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView,
-  StyleSheet, Text, TouchableWithoutFeedback, View, useColorScheme,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+  useColorScheme,
 } from 'react-native';
 
 import { useRegexTesterViewModel } from '../../../viewModels/useRegexTesterViewModel';
@@ -11,51 +20,70 @@ import RegexSearchBar from '../atoms/RegexSearchBar';
 import ASTViewer from '../molecules/ASTViewer';
 import HighlightedText from '../molecules/HighlightedText';
 
+type Example = { name: string; pattern: string };
+
 export default function RegexTester() {
-  /* ── theming ───────────────────────────────────────────────────────────── */
   const isDark = useColorScheme() === 'dark';
   const styles = createStyles(isDark);
 
-  /* ── view-model ─────────────────────────────────────────────────────────── */
   const {
-    /* estado */
-    regex, input, ast,
-    savedExpressions, history, favorites,
+    regex,
+    input,
+    ast,
+    savedExpressions,
+    history,
+    favorites,
 
-    /* acciones */
     handleRegexInput,
-    handleSaveRegex, handleDeleteRegex, handleEditRegex,
-    handleExportRegexes, handleImportRegexes,
-    handleClearHistory,
+    handleSaveRegex,
+    handleDeleteRegex,
+    handleEditRegex,
+    handleExportRegexes,
+    handleImportRegexes,
     toggleFavorite,
+    handleClearHistory,
   } = useRegexTesterViewModel();
 
-  /* ── estado local de UI ────────────────────────────────────────────────── */
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-  /* ── helpers ───────────────────────────────────────────────────────────── */
+  // Lista de ejemplos
+  const examples: Example[] = [
+    { name: 'Correo electrónico básico', pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$' },
+    { name: 'URL (http/https)',             pattern: 'https?:\\/\\/(?:www\\.)?[^\\s\\/$.?#].[^\\s]*$' },
+    { name: 'Teléfono internacional',        pattern: '\\+[1-9]\\d{1,14}$' },
+    { name: 'Fecha DD/MM/AAAA',             pattern: '(0[1-9]|[12]\\d|3[01])\\/(0[1-9]|1[0-2])\\/\\d{4}$' },
+    { name: 'Dirección IPv4',               pattern: '((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$' },
+    { name: 'Color hexadecimal',             pattern: '#(?:[0-9A-Fa-f]{3}){1,2}$' },
+    { name: 'Contraseña fuerte',             pattern: '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$' },
+    { name: 'Solo dígitos',                  pattern: '\\d+$' },
+    { name: 'Palabra completa',              pattern: '\\bpalabra\\b' },
+    { name: 'Etiqueta HTML simple',         pattern: '<([A-Za-z][A-Za-z0-9]*)\\b[^>]*>(.*?)<\\/\\1>$' },
+  ];
+
   const renderList = (
     title: string,
     expressions: string[],
-    allowDelete = false,
+    allowDelete = false
   ) => {
-    const filtered = expressions.filter(e =>
-      e.toLowerCase().includes(searchTerm.toLowerCase()),
+    const filtered = expressions.filter(expr =>
+      expr.toLowerCase().includes(searchTerm.toLowerCase())
     );
     if (!filtered.length) return null;
 
     return (
       <View style={styles.listContainer}>
-        {/* título + botón borrar historial */}
         <View style={styles.listHeader}>
           <Text style={styles.listTitle}>{title}</Text>
-          {title.includes('Historial') && filtered.length > 0 && (
+          {title === '🕘 Historial' && filtered.length > 0 && (
             <Pressable onPress={handleClearHistory}>
-              <MaterialIcons name="delete-sweep" size={22} color={isDark ? '#ff8a65' : '#d32f2f'} />
+              <MaterialIcons
+                name="delete-sweep"
+                size={20}
+                color={isDark ? '#ff8a65' : '#d32f2f'}
+              />
             </Pressable>
           )}
         </View>
-
         {filtered.map((expr, idx) => (
           <View key={`${title}-${idx}`} style={styles.listItem}>
             <Pressable
@@ -64,20 +92,16 @@ export default function RegexTester() {
             >
               <Text style={styles.expressionText}>{expr}</Text>
             </Pressable>
-
-            {/* toggle favorito */}
             <Pressable onPress={() => toggleFavorite(expr)}>
               <MaterialIcons
                 name={favorites.includes(expr) ? 'star' : 'star-border'}
-                size={22}
+                size={20}
                 color="#FFD700"
               />
             </Pressable>
-
-            {/* eliminar (sólo lista guardadas) */}
             {allowDelete && (
               <Pressable onPress={() => handleDeleteRegex(expr)}>
-                <MaterialIcons name="delete" size={22} color="#f44336" />
+                <MaterialIcons name="delete" size={20} color="#f44336" />
               </Pressable>
             )}
           </View>
@@ -86,22 +110,23 @@ export default function RegexTester() {
     );
   };
 
-  /* ── main scroll content ───────────────────────────────────────────────── */
+  const onSelectExample = (pattern: string) => {
+    handleRegexInput(pattern, input);
+  };
+
   const content = (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
-      {/* entrada expresión */}
+      {/* Entradas */}
       <LabeledInput
         label="Expresión Regular:"
         placeholder="Ej. \\d+"
         value={regex}
-        onChangeText={text => handleRegexInput(text, input)}
+        onChangeText={txt => handleRegexInput(txt, input)}
         dark={isDark}
       />
-
-      {/* texto de prueba */}
       <LabeledInput
         label="Texto de prueba:"
         placeholder="Escribe aquí..."
@@ -111,23 +136,27 @@ export default function RegexTester() {
         dark={isDark}
       />
 
-      {/* botones principales */}
+      {/* Botones */}
       <View style={styles.buttonGroup}>
-        {[
-          { icon: 'save', text: 'Guardar', onPress: handleSaveRegex },
-          { icon: 'file-upload', text: 'Exportar', onPress: handleExportRegexes },
-          { icon: 'file-download', text: 'Importar', onPress: handleImportRegexes },
-        ].map(btn => (
-          <Pressable key={btn.text} style={styles.iconButton} onPress={btn.onPress}>
-            <MaterialIcons name={btn.icon as any} size={20} color="#fff" />
-            <Text style={styles.iconButtonText}>{btn.text}</Text>
-          </Pressable>
-        ))}
+        <Pressable style={styles.iconButton} onPress={handleSaveRegex}>
+          <MaterialIcons name="save" size={20} color="#fff" />
+          <Text style={styles.iconButtonText}>Guardar</Text>
+        </Pressable>
+        <Pressable style={styles.iconButton} onPress={handleExportRegexes}>
+          <MaterialIcons name="file-upload" size={20} color="#fff" />
+          <Text style={styles.iconButtonText}>Exportar</Text>
+        </Pressable>
+        <Pressable style={styles.iconButton} onPress={handleImportRegexes}>
+          <MaterialIcons name="file-download" size={20} color="#fff" />
+          <Text style={styles.iconButtonText}>Importar</Text>
+        </Pressable>
       </View>
 
-      {/* coincidencias */}
+      {/* Resaltado */}
       <View style={styles.matchCard}>
-        <Text style={styles.matchCardTitle}>Texto con coincidencias resaltadas:</Text>
+        <Text style={styles.matchCardTitle}>
+          Texto con coincidencias resaltadas:
+        </Text>
         <HighlightedText
           text={input}
           pattern={regex}
@@ -137,22 +166,42 @@ export default function RegexTester() {
       </View>
 
       {/* AST */}
-      <ASTViewer ast={ast} dark={isDark} />
+      <ASTViewer ast={ast} />
 
-      {/* buscador */}
-      <RegexSearchBar value={searchTerm} onChange={setSearchTerm} dark={isDark} />
+      {/* Buscador */}
+      <RegexSearchBar
+        value={searchTerm}
+        onChange={setSearchTerm}
+        dark={isDark}
+      />
 
-      {/* listas */}
+      {/* Favoritas */}
       {renderList('⭐ Favoritas', favorites)}
+      {/* Historial */}
       {renderList('🕘 Historial', history)}
+      {/* Ejemplos */}
+      <View style={styles.examplesContainer}>
+        <Text style={styles.examplesTitle}>Ejemplos rápidos:</Text>
+        {examples.map(ex => (
+          <Pressable
+            key={ex.pattern}
+            style={styles.exampleItem}
+            onPress={() => onSelectExample(ex.pattern)}
+          >
+            <Text style={styles.exampleName}>{ex.name}</Text>
+            <Text style={styles.examplePattern}>{ex.pattern}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {/* Guardadas */}
       {renderList('💾 Guardadas', savedExpressions, true)}
     </ScrollView>
   );
 
-  /* ── envoltorio móvil/web (cierre teclado) ─────────────────────────────── */
-  return Platform.OS === 'web' ? (
-    <View style={styles.container}>{content}</View>
-  ) : (
+  if (Platform.OS === 'web') {
+    return <View style={styles.container}>{content}</View>;
+  }
+  return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -164,20 +213,11 @@ export default function RegexTester() {
   );
 }
 
-/* ── estilos ─────────────────────────────────────────────────────────────── */
 const createStyles = (dark: boolean) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: dark ? '#121212' : '#fff',
-    },
-    scrollContent: {
-      padding: 20,
-      paddingTop: 50,
-      paddingBottom: 100,
-    },
+    container: { flex: 1, backgroundColor: dark ? '#121212' : '#fff' },
+    scrollContent: { padding: 20, paddingTop: 50, paddingBottom: 100 },
 
-    /* botones */
     buttonGroup: {
       flexDirection: 'row',
       justifyContent: 'center',
@@ -194,7 +234,6 @@ const createStyles = (dark: boolean) =>
     },
     iconButtonText: { color: '#fff', fontSize: 14, marginLeft: 6 },
 
-    /* coincidencias */
     matchCard: {
       backgroundColor: dark ? '#333' : '#fff',
       padding: 12,
@@ -207,7 +246,6 @@ const createStyles = (dark: boolean) =>
       color: dark ? '#fff' : '#000',
     },
 
-    /* listas */
     listContainer: { marginTop: 24 },
     listHeader: {
       flexDirection: 'row',
@@ -230,4 +268,31 @@ const createStyles = (dark: boolean) =>
     },
     expressionWrapper: { flex: 1, marginRight: 8 },
     expressionText: { fontSize: 15, color: dark ? '#fff' : '#000' },
+
+    examplesContainer: {
+      marginTop: 24,
+      padding: 12,
+      backgroundColor: dark ? '#222' : '#fafafa',
+      borderRadius: 6,
+    },
+    examplesTitle: {
+      fontWeight: '700',
+      fontSize: 16,
+      marginBottom: 12,
+      color: dark ? '#fff' : '#000',
+    },
+    exampleItem: {
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderColor: dark ? '#444' : '#ddd',
+    },
+    exampleName: {
+      fontWeight: '600',
+      color: dark ? '#fff' : '#000',
+    },
+    examplePattern: {
+      fontFamily: 'monospace',
+      color: dark ? '#ccc' : '#555',
+      marginTop: 2,
+    },
   });
