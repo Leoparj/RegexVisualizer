@@ -1,5 +1,4 @@
 // src/features/regexTester/components/molecules/ASTViewer.tsx
-import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   Pressable,
@@ -10,11 +9,13 @@ import {
   View,
 } from 'react-native';
 import { safeStringify } from '../../../../utils/safeStringify';
-import RailroadDiagram from './RailroadDiagram';
+import TreeDiagram from './TreeDiagram';
+
+type ViewMode = 'json' | 'tree' | 'rail';
 
 export default function ASTViewer({ ast }: { ast: any }) {
-  const [view, setView] = useState<'json' | 'rail'>('json');
-  const [zoom, setZoom] = useState(1);
+  const [view, setView] = useState<ViewMode>('json');
+  const [zoom, setZoom] = useState<number>(1);
   const isDark = useColorScheme() === 'dark';
   const styles = createStyles(isDark);
 
@@ -24,62 +25,101 @@ export default function ASTViewer({ ast }: { ast: any }) {
     <View style={styles.container}>
       <Text style={styles.title}>AST (Árbol de Sintaxis Abstracta):</Text>
 
-      {/* Pestañas */}
+      {/* ── PESTAÑAS ────────────────────────────── */}
       <View style={styles.tabBar}>
-        <Pressable
-          style={[styles.tab, view === 'json' && styles.tabActive]}
-          onPress={() => setView('json')}
-        >
-          <Text style={view === 'json' ? styles.tabTextActive : styles.tabText}>
-            JSON
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, view === 'rail' && styles.tabActive]}
-          onPress={() => setView('rail')}
-        >
-          <Text style={view === 'rail' ? styles.tabTextActive : styles.tabText}>
-            Ferrocarril
-          </Text>
-        </Pressable>
+        {(['json','tree','rail'] as const).map(v => (
+          <Pressable
+            key={v}
+            style={[styles.tab, view === v && styles.tabActive]}
+            onPress={() => setView(v)}
+          >
+            <Text style={view === v ? styles.tabTextActive : styles.tabText}>
+              {v === 'json'
+                ? 'JSON'
+                : v === 'tree'
+                ? 'Árbol'
+                : 'Ferrocarril'}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
-      {/* Contenido */}
-      {view === 'json' ? (
+      {/* ── JSON VIEW ──────────────────────────── */}
+      {view === 'json' && (
         <ScrollView style={styles.jsonContainer}>
           <Text style={styles.jsonText}>{safeStringify(ast, null, 2)}</Text>
         </ScrollView>
-      ) : (
+      )}
+
+      {/* ── TREE VIEW ─────────────────────────── */}
+      {view === 'tree' && (
         <>
-          {/* Controles de Zoom */}
+          {/* Controles de zoom */}
           <View style={styles.zoomControls}>
-            <Pressable onPress={() => setZoom(z => z * 1.2)} style={styles.zoomButton}>
-              <MaterialIcons name="zoom-in" size={24} color={isDark ? '#fff' : '#000'} />
+            <Pressable
+              style={styles.zoomBtn}
+              onPress={() => setZoom(z => Math.min(z + 0.2, 3))}
+            >
+              <Text style={styles.zoomTxt}>＋</Text>
             </Pressable>
-            <Pressable onPress={() => setZoom(z => z / 1.2)} style={styles.zoomButton}>
-              <MaterialIcons name="zoom-out" size={24} color={isDark ? '#fff' : '#000'} />
+            <Pressable
+              style={styles.zoomBtn}
+              onPress={() => setZoom(z => Math.max(z - 0.2, 0.4))}
+            >
+              <Text style={styles.zoomTxt}>－</Text>
             </Pressable>
           </View>
-
-          {/* Diagrama con scroll horizontal */}
           <ScrollView
             horizontal
-            contentContainerStyle={styles.railContainer}
-            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1 }}
+            style={styles.treeScrollH}
           >
-            <RailroadDiagram ast={ast} zoom={zoom} dark={isDark} />
+            <ScrollView style={styles.treeScrollV}>
+              <TreeDiagram ast={ast} dark={isDark} zoom={zoom} />
+            </ScrollView>
           </ScrollView>
         </>
+      )}
+
+      {/* ── RAIL VIEW (antes ASCII) ───────────── */}
+      {view === 'rail' && (
+        <ScrollView style={styles.asciiContainer}>
+          <Text style={styles.asciiText}>{asciiRail(ast)}</Text>
+        </ScrollView>
       )}
     </View>
   );
 }
 
+/**
+ * Genera una línea ASCII (convertida ahora en la vista "Ferrocarril")
+ * Ejemplo: INICIO ──► (a|b)* ──► c ──► FIN
+ */
+function asciiRail(ast: any): string {
+  const pat = ast.alternatives?.[0];
+  if (!pat?.elements) return '— AST no soportado para Ferrocarril —';
+
+  const parts = pat.elements.map((e: any) => {
+    if (e.type === 'Quantifier' && e.element) {
+      const inner = e.element.raw ?? e.element.type;
+      return `${inner}${e.raw}`;
+    }
+    if (typeof e.raw === 'string') return e.raw;
+    if (e.type === 'Group') {
+      const inside = e.alternatives?.[0].elements
+        .map((c:any) => c.raw||c.type)
+        .join('');
+      return `(${inside})`;
+    }
+    return e.type;
+  });
+
+  return `INICIO ──► ${parts.join(' ──► ')} ──► FIN`;
+}
+
 const createStyles = (dark: boolean) =>
   StyleSheet.create({
-    container: {
-      marginTop: 20,
-    },
+    container: { marginTop: 20 },
     title: {
       fontWeight: 'bold',
       fontSize: 16,
@@ -121,14 +161,29 @@ const createStyles = (dark: boolean) =>
     },
     zoomControls: {
       flexDirection: 'row',
-      justifyContent: 'center',
+      justifyContent: 'flex-end',
+      gap: 12,
       marginBottom: 8,
     },
-    zoomButton: {
-      marginHorizontal: 16,
+    zoomBtn: {
+      padding: 6,
+      borderRadius: 4,
+      backgroundColor: dark ? '#333' : '#e0e0e0',
     },
-    railContainer: {
-      alignItems: 'center',
-      paddingBottom: 20,
+    zoomTxt: {
+      fontSize: 18,
+      color: dark ? '#fff' : '#000',
+    },
+    treeScrollH: { maxHeight: 400 },
+    treeScrollV: { flex: 1 },
+    asciiContainer: {
+      backgroundColor: dark ? '#1a1a1a' : '#fafafa',
+      padding: 12,
+      borderRadius: 6,
+    },
+    asciiText: {
+      fontFamily: 'monospace',
+      color: dark ? '#fff' : '#000',
+      lineHeight: 20,
     },
   });
