@@ -1,16 +1,10 @@
-<<<<<<< Updated upstream
-=======
+// Lista las expresiones guardadas y permite editar, eliminar o compartir cada una.
 import { MaterialIcons } from '@expo/vector-icons';
->>>>>>> Stashed changes
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import React from 'react';
 import {
   Alert,
-<<<<<<< Updated upstream
-  Button,
-=======
->>>>>>> Stashed changes
   Platform,
   Pressable,
   StyleSheet,
@@ -23,20 +17,15 @@ export default function SavedRegexList({
   onDelete,
   onSelect,
   onEdit,
-<<<<<<< Updated upstream
-=======
   dark = false,
->>>>>>> Stashed changes
 }: {
   expressions: string[];
   onDelete: (expr: string) => void;
   onSelect: (expr: string) => void;
   onEdit: (oldExpr: string, newExpr: string) => void;
-<<<<<<< Updated upstream
-=======
   dark?: boolean;
->>>>>>> Stashed changes
 }) {
+  // Confirma antes de eliminar, con ventana nativa o prompt de browser
   const confirmDelete = (expr: string) => {
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(`¿Seguro que quieres eliminar "${expr}"?`);
@@ -53,6 +42,7 @@ export default function SavedRegexList({
     }
   };
 
+  // Solicita edición en web o en móvil
   const promptEdit = (expr: string) => {
     if (Platform.OS === 'web') {
       const edited = window.prompt('Editar expresión:', expr);
@@ -80,6 +70,7 @@ export default function SavedRegexList({
     }
   };
 
+  // Copia al portapapeles en web o genera archivo y comparte en móvil
   const handleShare = async (expr: string) => {
     try {
       if (Platform.OS === 'web') {
@@ -87,7 +78,6 @@ export default function SavedRegexList({
         await navigator.clipboard.writeText(expr);
         return;
       }
-
       const fileUri = `${FileSystem.cacheDirectory}expression.txt`;
       await FileSystem.writeAsStringAsync(fileUri, expr);
       await Sharing.shareAsync(fileUri);
@@ -97,25 +87,19 @@ export default function SavedRegexList({
     }
   };
 
-<<<<<<< Updated upstream
-=======
   const styles = createStyles(dark);
 
->>>>>>> Stashed changes
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Expresiones Guardadas:</Text>
       {expressions.map((expr, idx) => (
         <View key={idx} style={styles.item}>
+          {/* Selección de expresión */}
           <Pressable onPress={() => onSelect(expr)} style={styles.textPress}>
             <Text style={styles.expr}>{expr}</Text>
           </Pressable>
-<<<<<<< Updated upstream
-          <Button title="Editar" onPress={() => promptEdit(expr)} />
-          <Button title="Eliminar" onPress={() => confirmDelete(expr)} />
-          <Button title="Compartir" onPress={() => handleShare(expr)} />
-=======
 
+          {/* Botones de acción: editar, eliminar, compartir */}
           <View style={styles.actions}>
             <Pressable onPress={() => promptEdit(expr)} style={[styles.actionBtn, styles.edit]}>
               <MaterialIcons name="edit" size={18} color="#fff" />
@@ -129,33 +113,12 @@ export default function SavedRegexList({
               <MaterialIcons name="share" size={18} color="#fff" />
             </Pressable>
           </View>
->>>>>>> Stashed changes
         </View>
       ))}
     </View>
   );
 }
 
-<<<<<<< Updated upstream
-const styles = StyleSheet.create({
-  container: { marginTop: 30 },
-  title: { fontWeight: 'bold', marginBottom: 10 },
-  item: {
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  expr: {
-    flex: 1,
-    marginRight: 10,
-    fontSize: 14,
-  },
-  textPress: {
-    flex: 1,
-  },
-});
-=======
 const createStyles = (dark: boolean) =>
   StyleSheet.create({
     container: { marginTop: 30 },
@@ -199,4 +162,3 @@ const createStyles = (dark: boolean) =>
       backgroundColor: '#9c27b0',
     },
   });
->>>>>>> Stashed changes

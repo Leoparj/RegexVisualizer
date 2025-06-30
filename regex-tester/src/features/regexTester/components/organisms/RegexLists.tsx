@@ -1,3 +1,5 @@
+// src/features/regexTester/components/organisms/RegexLists.tsx
+
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -8,13 +10,20 @@ interface Props {
 }
 
 export default function RegexListSection({ title, expressions, onPressItem }: Props) {
+  // Si no hay elementos, no renderiza nada
   if (expressions.length === 0) return null;
 
   return (
     <View style={styles.section}>
+      {/* Título de la sección */}
       <Text style={styles.title}>{title}</Text>
+      {/* Lista de expresiones como botones */}
       {expressions.map((expr, idx) => (
-        <Pressable key={idx} onPress={() => onPressItem?.(expr)} style={styles.item}>
+        <Pressable
+          key={idx}
+          onPress={() => onPressItem?.(expr)}
+          style={styles.item}
+        >
           <Text style={styles.itemText}>{expr}</Text>
         </Pressable>
       ))}

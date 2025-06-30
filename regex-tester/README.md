@@ -1,50 +1,149 @@
-# Welcome to your Expo app 👋
+# Regex Visualizer / Regex Tester
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+¡Bienvenido a **Regex Visualizer**! Esta aplicación te permite escribir y probar expresiones regulares en tiempo real, visualizar su AST (Árbol de Sintaxis Abstracta) y explorar diagramas de ferrocarril o árboles sintácticos para entender mejor cómo funciona cada patrón.
 
-## Get started
+---
 
-1. Install dependencies
+## 📌 Características
 
-   ```bash
-   npm install
-   ```
+- **Editor en vivo**: escribe tu expresión y texto de prueba, y ve las coincidencias resaltadas al instante.  
+- **AST interactivo**: explora la estructura interna de tu patrón en forma de árbol JSON o diagrama sintáctico.  
+- **Diagrama de ferrocarril**: representa gráficamente el flujo de tu expresión regular, con zoom y tooltip.  
+- **Historial automático**: guarda automáticamente las expresiones que usas, con opción de limpiar y marcar favoritos.  
+- **Gestión de guardadas**: guarda, edita, elimina, exporta/importa y comparte tus expresiones favoritas.  
+- **Ejemplos precargados**: accede con un clic a 10 patrones comunes (correo, URL, teléfono, fecha, IPv4, color hex, contraseña fuerte, dígitos, palabra completa, etiqueta HTML).  
+- **Temas claro/oscuro**: la interfaz se adapta a tu esquema de color.  
+- **Arquitectura profesional**: CLEAN + MVVM + Feature First + Atomic Design.
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 📂 Estructura del proyecto
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+REGEX-TESTER/
+├── mocks/ # mocks para tests
+├── tests/ # tests unitarios
+├── .expo/ # configuración de Expo
+├── .vscode/ # ajustes de VSCode
+├── app/ # rutas y pantallas (expo-router)
+├── assets/ # recursos estáticos (imágenes, fuentes…)
+├── components/ # componentes UI globales reutilizables
+├── constants/ # definiciones globales (colores, rutas…)
+├── hooks/ # custom hooks de uso general
+├── scripts/ # scripts de automatización / utilidades
+├── src/ # código fuente principal
+│ ├── features/
+│ │ └── regexTester/
+│ │ ├── components/ # UI atómico: atoms, molecules, organisms
+│ │ │ ├── atoms/
+│ │ │ ├── molecules/
+│ │ │ └── organisms/
+│ │ ├── services/ # parseo de RegEx + almacenamiento
+│ │ ├── types/ # tipos TS específicos del feature
+│ │ └── viewModels/ # lógica MVVM
+│ └── utils/ # utilidades genéricas (safeStringify, etc.)
+├── node_modules/ # dependencias instaladas
+├── README.md # este archivo
+├── package.json # definición de scripts y dependencias
+├── yarn.lock / package-lock.json # bloqueo de versiones
+├── tsconfig.json # configuración de TypeScript
+└── babel.config.js # configuración de Babel
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## ⚙️ Instalación y arranque
 
-To learn more about developing your project with Expo, look at the following resources:
+1. **Clona el repositorio**  
+   ```bash
+   git clone https://github.com/Leoparj/RegexVisualizer.git
+   cd RegexVisualizer/regex-tester
+   ```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+2. **Instala dependencias**  
+   ```bash
+   npm install
+   # o con Yarn
+   # yarn install
+   ```
 
-## Join the community
+3. **Inicia la app**  
+   ```bash
+   npm start
+   # o npx expo start
+   ```
 
-Join our community of developers creating universal apps.
+4. **Selecciona plataforma**  
+   - **Web**: abre `http://localhost:8081` en tu navegador.  
+   - **iOS / Android**: escanea el código QR con Expo Go.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 🚀 Uso
+
+1. Escribe tu **Expresión Regular** en el primer campo.  
+2. Ingresa el **Texto de prueba** en el segundo campo; verás las coincidencias resaltadas.  
+3. Cambia de pestaña en el visor de AST para ver JSON, Árbol sintáctico o Diagrama de ferrocarril.  
+4. Explora el **Historial** y marca favoritos con la ⭐.  
+5. Usa los botones para **Guardar**, **Exportar** o **Importar** tus patrones.  
+6. Prueba los ejemplos precargados desde la sección **Ejemplos**.
+
+---
+
+## ✏️ Ejemplos de expresiones regulares
+
+1. **Correo electrónico básico**  
+   ```regex
+   [A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$
+   ```
+2. **URL (http/https)**  
+   ```regex
+   https?:\/\/(?:www\.)?[^\s\/$.?#].[^\s]*$
+   ```
+3. **Número de teléfono internacional**  
+   ```regex
+   \+[1-9]\d{1,14}$
+   ```
+4. **Fecha DD/MM/AAAA**  
+   ```regex
+   (0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$
+   ```
+5. **IPv4**  
+   ```regex
+   ((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$
+   ```
+6. **Color hexadecimal**  
+   ```regex
+   #(?:[0-9A-Fa-f]{3}){1,2}$
+   ```
+7. **Contraseña fuerte (≥8 caracteres)**  
+   ```regex
+   (?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$
+   ```
+8. **Solo dígitos**  
+   ```regex
+   \d+$
+   ```
+9. **Palabra completa**  
+   ```regex
+   \bpalabra\b
+   ```
+10. **Etiqueta HTML simple**  
+    ```regex
+    ^<([A-Za-z][A-Za-z0-9]*)\b[^>]*>(.*?)<\/\1>$
+    ```
+
+---
+
+## 📐 Arquitectura
+
+- **CLEAN**: separación clara entre capas de UI, dominio y datos.  
+- **MVVM**: lógica en _ViewModels_ (hooks personalizados) con React Hooks o Zustand Store.  
+- **Feature First**: cada característica (regexTester) en su propio módulo.  
+- **Atomic Design**:  
+  - **Atoms**: botones, inputs, labels.  
+  - **Molecules**: listas, componentes combinados.  
+  - **Organisms**: pantallas completas.
+
+---
+

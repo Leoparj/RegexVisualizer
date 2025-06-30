@@ -1,4 +1,5 @@
-// src/features/regexTester/components/molecules/RailroadDiagram.tsx
+// Diagrama de árbol interactivo que simula un "ferrocarril" con óvalos y líneas.
+// Soporta zoom y tooltip al tocar cada nodo.
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Ellipse, G, Line, Text as SvgText } from 'react-native-svg';
@@ -7,19 +8,20 @@ interface RNode {
   label: string;
   children: RNode[];
 }
-
 interface Positioned {
   node: RNode;
   x: number;
   y: number;
 }
 
+// Configuración de tamaños y espaciamientos
 const MIN_RADIUS = 12;      // semieje vertical fijo
 const CHAR_WIDTH = 6;       // ancho aproximado por caracter
-const PADDING = 16;         // espacio extra en semieje horizontal
+const PADDING = 16;         // espacio extra semieje horizontal
 const H_SPACING = 80;       // espaciado horizontal base
 const V_SPACING = 100;      // espaciado vertical fijo
 
+/** Construye recursivamente RNode desde el AST */
 function buildRNode(ast: any): RNode {
   const label = ast.raw ?? ast.type ?? 'Node';
   const children: RNode[] = [];
@@ -36,6 +38,7 @@ function buildRNode(ast: any): RNode {
   return { label, children };
 }
 
+/** Calcula layout de árbol: posiciones, ancho y profundidad máxima */
 function layoutTree(
   node: RNode,
   depth = 0,
@@ -72,6 +75,7 @@ export default function RailroadDiagram({
   zoom?: number;
   dark?: boolean;
 }) {
+  // Validación AST
   if (
     !ast ||
     typeof ast !== 'object' ||
@@ -81,41 +85,42 @@ export default function RailroadDiagram({
     return null;
   }
 
+  // Construcción de árbol y layout
   const root = ast.alternatives[0];
   const tree = buildRNode(root);
   const { positions, width, maxDepth } = layoutTree(tree);
 
-  // dimensiones "originales"
+  // Dimensiones "sin escalar"
   const baseWidth  = width  * H_SPACING   + (MIN_RADIUS + PADDING) * 2;
   const baseHeight = (maxDepth + 1) * V_SPACING + (MIN_RADIUS + PADDING) * 2;
 
-  const lineColor   = dark ? '#888' : '#888';
+  // Colores según tema
+  const lineColor   = '#888';
   const fillColor   = dark ? '#444' : '#ace';
   const strokeColor = dark ? '#6af' : '#48a';
   const textColor   = dark ? '#fff' : '#000';
 
+  // Estado de tooltip
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   return (
     <View style={styles.wrapper}>
       <Svg width={baseWidth * zoom} height={baseHeight * zoom}>
-        {/* escalamos todo */}
+        {/* Agrupamos todo para aplicar zoom con un solo G */}
         <G scale={zoom}>
           {/* 1) Líneas padre→hijo */}
           {positions.map(({ node }) =>
             node.children.map(child => {
               const from = positions.find(p => p.node === node)!;
               const to   = positions.find(p => p.node === child)!;
-
-              // semieje horizontal dinámico
+              // Radio horizontal dinámico
               const rxFrom = Math.max((node.label.length * CHAR_WIDTH) / 2 + PADDING, MIN_RADIUS);
               const rxTo   = Math.max((child.label.length * CHAR_WIDTH) / 2 + PADDING, MIN_RADIUS);
-
+              // Coordenadas de los puntos de conexión
               const x1 = from.x * H_SPACING + rxFrom + PADDING;
               const y1 = from.y * V_SPACING + MIN_RADIUS + PADDING;
               const x2 = to.x   * H_SPACING + rxTo   + PADDING;
               const y2 = to.y   * V_SPACING + MIN_RADIUS + PADDING;
-
               return (
                 <Line
                   key={`${x1}-${y1}-${x2}-${y2}`}
@@ -135,7 +140,6 @@ export default function RailroadDiagram({
             const rx = Math.max((node.label.length * CHAR_WIDTH) / 2 + PADDING, MIN_RADIUS);
             const cx = x * H_SPACING + rx + PADDING;
             const cy = y * V_SPACING + MIN_RADIUS + PADDING;
-
             return (
               <G key={i} onPress={() => setTooltip({ x: cx, y: cy, text: node.label })}>
                 <Ellipse
@@ -163,7 +167,7 @@ export default function RailroadDiagram({
         </G>
       </Svg>
 
-      {/* Tooltip */}
+      {/* Tooltip absolute */}
       {tooltip && (
         <View
           style={[
@@ -188,7 +192,7 @@ const styles = StyleSheet.create({
   wrapper: {
     marginVertical: 10,
     alignItems: 'center',
-    position: 'relative', // para tooltip
+    position: 'relative',
   },
   tooltip: {
     position: 'absolute',

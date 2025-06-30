@@ -1,4 +1,5 @@
 // src/features/regexTester/components/organisms/RegexTester.tsx
+
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -14,18 +15,24 @@ import {
   useColorScheme,
 } from 'react-native';
 
+// Hook que maneja el estado y la lógica (MVVM)
 import { useRegexTesterViewModel } from '../../../viewModels/useRegexTesterViewModel';
+
+// Componentes atómicos
 import LabeledInput from '../atoms/LabeledInput';
 import RegexSearchBar from '../atoms/RegexSearchBar';
 import ASTViewer from '../molecules/ASTViewer';
 import HighlightedText from '../molecules/HighlightedText';
 
+// Tipo para los ejemplos rápidos
 type Example = { name: string; pattern: string };
 
 export default function RegexTester() {
+  // Detecta tema oscuro/claro
   const isDark = useColorScheme() === 'dark';
   const styles = createStyles(isDark);
 
+  // Extraemos todo lo necesario del ViewModel
   const {
     regex,
     input,
@@ -34,19 +41,20 @@ export default function RegexTester() {
     history,
     favorites,
 
-    handleRegexInput,
-    handleSaveRegex,
-    handleDeleteRegex,
-    handleEditRegex,
-    handleExportRegexes,
-    handleImportRegexes,
-    toggleFavorite,
-    handleClearHistory,
+    handleRegexInput,    // Actualiza regex, input y AST + historial automático
+    handleSaveRegex,     // Guarda la expresión en la lista de guardadas
+    handleDeleteRegex,   // Elimina una expresión guardada
+    handleEditRegex,     // Edita una expresión guardada
+    handleExportRegexes, // Exporta todas las guardadas
+    handleImportRegexes, // Importa expresiones de un archivo
+    toggleFavorite,      // Marca/desmarca como favorita
+    handleClearHistory,  // Limpia todo el historial
   } = useRegexTesterViewModel();
 
+  // Estado local para filtrar listas
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Lista de ejemplos
+  // Definición de ejemplos rápidos con nombre y patrón
   const examples: Example[] = [
     { name: 'Correo electrónico básico', pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}' },
     { name: 'URL (http/https)',             pattern: 'https?:\\/\\/(?:www\\.)?[^\\s\\/$.?#].[^\\s]*' },
@@ -60,11 +68,18 @@ export default function RegexTester() {
     { name: 'Etiqueta HTML simple',         pattern: '<([A-Za-z][A-Za-z0-9]*)\\b[^>]*>(.*?)<\\/\\1>' },
   ];
 
+  /**
+   * Renderiza una sección genérica de lista (favoritas, historial, guardadas).
+   * @param title Título de la sección
+   * @param expressions Array de patrones a mostrar
+   * @param allowDelete Si permite mostrar botón de eliminar (solo guardadas)
+   */
   const renderList = (
     title: string,
     expressions: string[],
     allowDelete = false
   ) => {
+    // Filtramos según el término de búsqueda
     const filtered = expressions.filter(expr =>
       expr.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -75,6 +90,7 @@ export default function RegexTester() {
         <View style={styles.listHeader}>
           <Text style={styles.listTitle}>{title}</Text>
           {title === '🕘 Historial' && filtered.length > 0 && (
+            // Botón para limpiar todo el historial
             <Pressable onPress={handleClearHistory}>
               <MaterialIcons
                 name="delete-sweep"
@@ -86,12 +102,14 @@ export default function RegexTester() {
         </View>
         {filtered.map((expr, idx) => (
           <View key={`${title}-${idx}`} style={styles.listItem}>
+            {/* Al presionar, carga la expresión en los inputs */}
             <Pressable
               style={styles.expressionWrapper}
               onPress={() => handleRegexInput(expr, input)}
             >
               <Text style={styles.expressionText}>{expr}</Text>
             </Pressable>
+            {/* Botón de favorito */}
             <Pressable onPress={() => toggleFavorite(expr)}>
               <MaterialIcons
                 name={favorites.includes(expr) ? 'star' : 'star-border'}
@@ -99,6 +117,7 @@ export default function RegexTester() {
                 color="#FFD700"
               />
             </Pressable>
+            {/* Botón eliminar (solo en guardadas) */}
             {allowDelete && (
               <Pressable onPress={() => handleDeleteRegex(expr)}>
                 <MaterialIcons name="delete" size={20} color="#f44336" />
@@ -110,16 +129,21 @@ export default function RegexTester() {
     );
   };
 
+  /**
+   * Cuando seleccionamos un ejemplo rápido, lo cargamos
+   * en el input como nueva expresión.
+   */
   const onSelectExample = (pattern: string) => {
     handleRegexInput(pattern, input);
   };
 
+  // Contenido principal de la pantalla
   const content = (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Entradas */}
+      {/* Inputs para expresión y texto de prueba */}
       <LabeledInput
         label="Expresión Regular:"
         placeholder="Ej. \\d+"
@@ -136,7 +160,7 @@ export default function RegexTester() {
         dark={isDark}
       />
 
-      {/* Botones */}
+      {/* Botones de acciones principales */}
       <View style={styles.buttonGroup}>
         <Pressable style={styles.iconButton} onPress={handleSaveRegex}>
           <MaterialIcons name="save" size={20} color="#fff" />
@@ -152,7 +176,7 @@ export default function RegexTester() {
         </Pressable>
       </View>
 
-      {/* Resaltado */}
+      {/* Vista de texto con coincidencias resaltadas */}
       <View style={styles.matchCard}>
         <Text style={styles.matchCardTitle}>
           Texto con coincidencias resaltadas:
@@ -165,21 +189,21 @@ export default function RegexTester() {
         />
       </View>
 
-      {/* AST */}
+      {/* Componente que muestra AST y diagramas */}
       <ASTViewer ast={ast} />
 
-      {/* Buscador */}
+      {/* Barra de búsqueda para filtrar listas */}
       <RegexSearchBar
         value={searchTerm}
         onChange={setSearchTerm}
         dark={isDark}
       />
 
-      {/* Favoritas */}
+      {/* Secciones de Favoritas, Historial, Ejemplos y Guardadas */}
       {renderList('⭐ Favoritas', favorites)}
-      {/* Historial */}
       {renderList('🕘 Historial', history)}
-      {/* Ejemplos */}
+
+      {/* Ejemplos rápidos */}
       <View style={styles.examplesContainer}>
         <Text style={styles.examplesTitle}>Ejemplos rápidos:</Text>
         {examples.map(ex => (
@@ -193,11 +217,12 @@ export default function RegexTester() {
           </Pressable>
         ))}
       </View>
-      {/* Guardadas */}
+
       {renderList('💾 Guardadas', savedExpressions, true)}
     </ScrollView>
   );
 
+  // Adaptación para web vs móvil (manejo del teclado)
   if (Platform.OS === 'web') {
     return <View style={styles.container}>{content}</View>;
   }
@@ -213,6 +238,7 @@ export default function RegexTester() {
   );
 }
 
+// Estilos dinámicos según tema
 const createStyles = (dark: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: dark ? '#121212' : '#fff' },

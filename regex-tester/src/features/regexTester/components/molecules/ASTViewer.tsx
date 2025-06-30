@@ -1,4 +1,5 @@
-// src/features/regexTester/components/molecules/ASTViewer.tsx
+// Componente principal que muestra el AST en tres vistas:
+// JSON raw, diagrama de árbol (TreeDiagram) y diagrama ASCII/"Ferrocarril".
 import React, { useState } from 'react';
 import {
   Pressable,
@@ -23,11 +24,12 @@ export default function ASTViewer({ ast }: { ast: any }) {
 
   return (
     <View style={styles.container}>
+      {/* Título */}
       <Text style={styles.title}>AST (Árbol de Sintaxis Abstracta):</Text>
 
-      {/* ── PESTAÑAS ────────────────────────────── */}
+      {/* Pestañas de selección de vista */}
       <View style={styles.tabBar}>
-        {(['json','tree','rail'] as const).map(v => (
+        {(['json', 'tree', 'rail'] as const).map(v => (
           <Pressable
             key={v}
             style={[styles.tab, view === v && styles.tabActive]}
@@ -44,14 +46,14 @@ export default function ASTViewer({ ast }: { ast: any }) {
         ))}
       </View>
 
-      {/* ── JSON VIEW ──────────────────────────── */}
+      {/* JSON RAW */}
       {view === 'json' && (
         <ScrollView style={styles.jsonContainer}>
           <Text style={styles.jsonText}>{safeStringify(ast, null, 2)}</Text>
         </ScrollView>
       )}
 
-      {/* ── TREE VIEW ─────────────────────────── */}
+      {/* DIAGRAMA DE ÁRBOL */}
       {view === 'tree' && (
         <>
           {/* Controles de zoom */}
@@ -69,6 +71,8 @@ export default function ASTViewer({ ast }: { ast: any }) {
               <Text style={styles.zoomTxt}>－</Text>
             </Pressable>
           </View>
+
+          {/* Scroll horizontal y vertical para el diagrama */}
           <ScrollView
             horizontal
             contentContainerStyle={{ flexGrow: 1 }}
@@ -81,7 +85,7 @@ export default function ASTViewer({ ast }: { ast: any }) {
         </>
       )}
 
-      {/* ── RAIL VIEW (antes ASCII) ───────────── */}
+      {/* ASCII / FERROCARRIL SIMPLE */}
       {view === 'rail' && (
         <ScrollView style={styles.asciiContainer}>
           <Text style={styles.asciiText}>{asciiRail(ast)}</Text>
@@ -92,8 +96,8 @@ export default function ASTViewer({ ast }: { ast: any }) {
 }
 
 /**
- * Genera una línea ASCII (convertida ahora en la vista "Ferrocarril")
- * Ejemplo: INICIO ──► (a|b)* ──► c ──► FIN
+ * Genera una representación ASCII lineal de la expresión:
+ * INICIO ──► elem1 ──► elem2* ──► (a|b) ──► FIN
  */
 function asciiRail(ast: any): string {
   const pat = ast.alternatives?.[0];
@@ -107,7 +111,7 @@ function asciiRail(ast: any): string {
     if (typeof e.raw === 'string') return e.raw;
     if (e.type === 'Group') {
       const inside = e.alternatives?.[0].elements
-        .map((c:any) => c.raw||c.type)
+        .map((c: any) => c.raw || c.type)
         .join('');
       return `(${inside})`;
     }
