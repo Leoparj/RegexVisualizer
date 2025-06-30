@@ -1,4 +1,5 @@
 // src/features/regexTester/components/molecules/ASTViewer.tsx
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   Pressable,
@@ -13,6 +14,7 @@ import RailroadDiagram from './RailroadDiagram';
 
 export default function ASTViewer({ ast }: { ast: any }) {
   const [view, setView] = useState<'json' | 'rail'>('json');
+  const [zoom, setZoom] = useState(1);
   const isDark = useColorScheme() === 'dark';
   const styles = createStyles(isDark);
 
@@ -42,15 +44,32 @@ export default function ASTViewer({ ast }: { ast: any }) {
         </Pressable>
       </View>
 
-      {/* Contenido de la pestaña */}
+      {/* Contenido */}
       {view === 'json' ? (
         <ScrollView style={styles.jsonContainer}>
           <Text style={styles.jsonText}>{safeStringify(ast, null, 2)}</Text>
         </ScrollView>
       ) : (
-        <ScrollView horizontal contentContainerStyle={styles.railContainer}>
-          <RailroadDiagram ast={ast} dark={isDark} />
-        </ScrollView>
+        <>
+          {/* Controles de Zoom */}
+          <View style={styles.zoomControls}>
+            <Pressable onPress={() => setZoom(z => z * 1.2)} style={styles.zoomButton}>
+              <MaterialIcons name="zoom-in" size={24} color={isDark ? '#fff' : '#000'} />
+            </Pressable>
+            <Pressable onPress={() => setZoom(z => z / 1.2)} style={styles.zoomButton}>
+              <MaterialIcons name="zoom-out" size={24} color={isDark ? '#fff' : '#000'} />
+            </Pressable>
+          </View>
+
+          {/* Diagrama con scroll horizontal */}
+          <ScrollView
+            horizontal
+            contentContainerStyle={styles.railContainer}
+            showsHorizontalScrollIndicator={false}
+          >
+            <RailroadDiagram ast={ast} zoom={zoom} dark={isDark} />
+          </ScrollView>
+        </>
       )}
     </View>
   );
@@ -100,8 +119,16 @@ const createStyles = (dark: boolean) =>
       fontFamily: 'monospace',
       color: dark ? '#fff' : '#000',
     },
+    zoomControls: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    zoomButton: {
+      marginHorizontal: 16,
+    },
     railContainer: {
-      paddingVertical: 10,
-      paddingHorizontal: 20,
+      alignItems: 'center',
+      paddingBottom: 20,
     },
   });
