@@ -45,7 +45,8 @@
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "regexpp": "^3.2.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

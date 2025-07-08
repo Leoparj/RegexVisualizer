@@ -15,8 +15,8 @@ import {
   useColorScheme,
 } from 'react-native';
 
-// Hook que maneja el estado y la lógica (MVVM)
-import { useRegexTesterViewModel } from '../../../viewModels/useRegexTesterViewModel';
+// 1) Ahora importamos el store de Zustand, no el viewModel
+import { useRegexStore } from '../../store/useRegexStore';
 
 // Componentes atómicos
 import LabeledInput from '../atoms/LabeledInput';
@@ -24,64 +24,53 @@ import RegexSearchBar from '../atoms/RegexSearchBar';
 import ASTViewer from '../molecules/ASTViewer';
 import HighlightedText from '../molecules/HighlightedText';
 
-// Tipo para los ejemplos rápidos
 type Example = { name: string; pattern: string };
 
 export default function RegexTester() {
-  // Detecta tema oscuro/claro
   const isDark = useColorScheme() === 'dark';
   const styles = createStyles(isDark);
 
-  // Extraemos todo lo necesario del ViewModel
+  // 2) Desestructuramos TODO desde el store
   const {
     regex,
     input,
     ast,
-    savedExpressions,
+    saved,
     history,
-    favorites,
+    favs,
 
-    handleRegexInput,    // Actualiza regex, input y AST + historial automático
-    handleSaveRegex,     // Guarda la expresión en la lista de guardadas
-    handleDeleteRegex,   // Elimina una expresión guardada
-    handleEditRegex,     // Edita una expresión guardada
-    handleExportRegexes, // Exporta todas las guardadas
-    handleImportRegexes, // Importa expresiones de un archivo
-    toggleFavorite,      // Marca/desmarca como favorita
-    handleClearHistory,  // Limpia todo el historial
-  } = useRegexTesterViewModel();
+    setRegexInput,
+    saveRegex,
+    deleteRegex,
+    editRegex,
+    clearHistory,
+    toggleFav,
+    exportAll,
+    importAll,
+  } = useRegexStore();
 
-  // Estado local para filtrar listas
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Definición de ejemplos rápidos con nombre y patrón
   const examples: Example[] = [
-    { name: 'Correo electrónico básico', pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}' },
-    { name: 'URL (http/https)',             pattern: 'https?:\\/\\/(?:www\\.)?[^\\s\\/$.?#].[^\\s]*' },
-    { name: 'Teléfono internacional',        pattern: '\\+[1-9]\\d{1,14}' },
-    { name: 'Fecha DD/MM/AAAA',             pattern: '(0[1-9]|[12]\\d|3[01])\\/(0[1-9]|1[0-2])\\/\\d{4}' },
-    { name: 'Dirección IPv4',               pattern: '((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)' },
-    { name: 'Color hexadecimal',             pattern: '#(?:[0-9A-Fa-f]{3}){1,2}' },
-    { name: 'Contraseña fuerte',             pattern: '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}' },
-    { name: 'Solo dígitos',                  pattern: '\\d+' },
-    { name: 'Palabra completa',              pattern: '\\bpalabra\\b' },
-    { name: 'Etiqueta HTML simple',         pattern: '<([A-Za-z][A-Za-z0-9]*)\\b[^>]*>(.*?)<\\/\\1>' },
+    { name: 'Correo electrónico', pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}' },
+    { name: 'URL (http/https)',   pattern: 'https?:\\/\\/(?:www\\.)?[^\\s\\/$.?#].[^\\s]*' },
+    { name: 'Teléfono intl.',      pattern: '\\+[1-9]\\d{1,14}' },
+    { name: 'Fecha DD/MM/AAAA',    pattern: '(0[1-9]|[12]\\d|3[01])\\/(0[1-9]|1[0-2])\\/\\d{4}' },
+    { name: 'IPv4',                pattern: '((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)' },
+    { name: 'Hex Color',           pattern: '#(?:[0-9A-Fa-f]{3}){1,2}' },
+    { name: 'Pwd fuerte',          pattern: '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}' },
+    { name: 'Solo dígitos',        pattern: '\\d+' },
+    { name: 'Palabra completa',    pattern: '\\bpalabra\\b' },
+    { name: 'HTML simple',         pattern: '<([A-Za-z][A-Za-z0-9]*)\\b[^>]*>(.*?)<\\/\\1>' },
   ];
 
-  /**
-   * Renderiza una sección genérica de lista (favoritas, historial, guardadas).
-   * @param title Título de la sección
-   * @param expressions Array de patrones a mostrar
-   * @param allowDelete Si permite mostrar botón de eliminar (solo guardadas)
-   */
   const renderList = (
     title: string,
-    expressions: string[],
+    items: string[],
     allowDelete = false
   ) => {
-    // Filtramos según el término de búsqueda
-    const filtered = expressions.filter(expr =>
-      expr.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = items.filter(i =>
+      i.toLowerCase().includes(searchTerm.toLowerCase())
     );
     if (!filtered.length) return null;
 
@@ -90,8 +79,7 @@ export default function RegexTester() {
         <View style={styles.listHeader}>
           <Text style={styles.listTitle}>{title}</Text>
           {title === '🕘 Historial' && filtered.length > 0 && (
-            // Botón para limpiar todo el historial
-            <Pressable onPress={handleClearHistory}>
+            <Pressable onPress={clearHistory}>
               <MaterialIcons
                 name="delete-sweep"
                 size={20}
@@ -101,25 +89,22 @@ export default function RegexTester() {
           )}
         </View>
         {filtered.map((expr, idx) => (
-          <View key={`${title}-${idx}`} style={styles.listItem}>
-            {/* Al presionar, carga la expresión en los inputs */}
+          <View key={idx} style={styles.listItem}>
             <Pressable
               style={styles.expressionWrapper}
-              onPress={() => handleRegexInput(expr, input)}
+              onPress={() => setRegexInput(expr, input)}
             >
               <Text style={styles.expressionText}>{expr}</Text>
             </Pressable>
-            {/* Botón de favorito */}
-            <Pressable onPress={() => toggleFavorite(expr)}>
+            <Pressable onPress={() => toggleFav(expr)}>
               <MaterialIcons
-                name={favorites.includes(expr) ? 'star' : 'star-border'}
+                name={favs.includes(expr) ? 'star' : 'star-border'}
                 size={20}
                 color="#FFD700"
               />
             </Pressable>
-            {/* Botón eliminar (solo en guardadas) */}
             {allowDelete && (
-              <Pressable onPress={() => handleDeleteRegex(expr)}>
+              <Pressable onPress={() => deleteRegex(expr)}>
                 <MaterialIcons name="delete" size={20} color="#f44336" />
               </Pressable>
             )}
@@ -129,26 +114,20 @@ export default function RegexTester() {
     );
   };
 
-  /**
-   * Cuando seleccionamos un ejemplo rápido, lo cargamos
-   * en el input como nueva expresión.
-   */
   const onSelectExample = (pattern: string) => {
-    handleRegexInput(pattern, input);
+    setRegexInput(pattern, input);
   };
 
-  // Contenido principal de la pantalla
   const content = (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Inputs para expresión y texto de prueba */}
       <LabeledInput
         label="Expresión Regular:"
         placeholder="Ej. \\d+"
         value={regex}
-        onChangeText={txt => handleRegexInput(txt, input)}
+        onChangeText={txt => setRegexInput(txt, input)}
         dark={isDark}
       />
       <LabeledInput
@@ -156,54 +135,37 @@ export default function RegexTester() {
         placeholder="Escribe aquí..."
         value={input}
         multiline
-        onChangeText={txt => handleRegexInput(regex, txt)}
+        onChangeText={txt => setRegexInput(regex, txt)}
         dark={isDark}
       />
 
-      {/* Botones de acciones principales */}
       <View style={styles.buttonGroup}>
-        <Pressable style={styles.iconButton} onPress={handleSaveRegex}>
+        <Pressable style={styles.iconButton} onPress={saveRegex}>
           <MaterialIcons name="save" size={20} color="#fff" />
           <Text style={styles.iconButtonText}>Guardar</Text>
         </Pressable>
-        <Pressable style={styles.iconButton} onPress={handleExportRegexes}>
+        <Pressable style={styles.iconButton} onPress={exportAll}>
           <MaterialIcons name="file-upload" size={20} color="#fff" />
           <Text style={styles.iconButtonText}>Exportar</Text>
         </Pressable>
-        <Pressable style={styles.iconButton} onPress={handleImportRegexes}>
+        <Pressable style={styles.iconButton} onPress={importAll}>
           <MaterialIcons name="file-download" size={20} color="#fff" />
           <Text style={styles.iconButtonText}>Importar</Text>
         </Pressable>
       </View>
 
-      {/* Vista de texto con coincidencias resaltadas */}
       <View style={styles.matchCard}>
-        <Text style={styles.matchCardTitle}>
-          Texto con coincidencias resaltadas:
-        </Text>
-        <HighlightedText
-          text={input}
-          pattern={regex}
-          highlightColor="#ff0"
-          dark={isDark}
-        />
+        <Text style={styles.matchCardTitle}>Texto con coincidencias resaltadas:</Text>
+        <HighlightedText text={input} pattern={regex} highlightColor="#ff0" dark={isDark} />
       </View>
 
-      {/* Componente que muestra AST y diagramas */}
       <ASTViewer ast={ast} />
 
-      {/* Barra de búsqueda para filtrar listas */}
-      <RegexSearchBar
-        value={searchTerm}
-        onChange={setSearchTerm}
-        dark={isDark}
-      />
+      <RegexSearchBar value={searchTerm} onChange={setSearchTerm} dark={isDark} />
 
-      {/* Secciones de Favoritas, Historial, Ejemplos y Guardadas */}
-      {renderList('⭐ Favoritas', favorites)}
+      {renderList('⭐ Favoritas', favs)}
       {renderList('🕘 Historial', history)}
 
-      {/* Ejemplos rápidos */}
       <View style={styles.examplesContainer}>
         <Text style={styles.examplesTitle}>Ejemplos rápidos:</Text>
         {examples.map(ex => (
@@ -218,11 +180,10 @@ export default function RegexTester() {
         ))}
       </View>
 
-      {renderList('💾 Guardadas', savedExpressions, true)}
+      {renderList('💾 Guardadas', saved, true)}
     </ScrollView>
   );
 
-  // Adaptación para web vs móvil (manejo del teclado)
   if (Platform.OS === 'web') {
     return <View style={styles.container}>{content}</View>;
   }
@@ -238,12 +199,10 @@ export default function RegexTester() {
   );
 }
 
-// Estilos dinámicos según tema
 const createStyles = (dark: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: dark ? '#121212' : '#fff' },
     scrollContent: { padding: 20, paddingTop: 50, paddingBottom: 100 },
-
     buttonGroup: {
       flexDirection: 'row',
       justifyContent: 'center',
@@ -259,7 +218,6 @@ const createStyles = (dark: boolean) =>
       borderRadius: 8,
     },
     iconButtonText: { color: '#fff', fontSize: 14, marginLeft: 6 },
-
     matchCard: {
       backgroundColor: dark ? '#333' : '#fff',
       padding: 12,
@@ -271,7 +229,6 @@ const createStyles = (dark: boolean) =>
       marginBottom: 6,
       color: dark ? '#fff' : '#000',
     },
-
     listContainer: { marginTop: 24 },
     listHeader: {
       flexDirection: 'row',
@@ -294,7 +251,6 @@ const createStyles = (dark: boolean) =>
     },
     expressionWrapper: { flex: 1, marginRight: 8 },
     expressionText: { fontSize: 15, color: dark ? '#fff' : '#000' },
-
     examplesContainer: {
       marginTop: 24,
       padding: 12,
