@@ -46,7 +46,8 @@
     "react-native-webview": "13.13.5",
     "regexpp": "^3.2.0",
     "uuid": "^11.1.0",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.6",
+    "expo-sqlite": "~15.2.14"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

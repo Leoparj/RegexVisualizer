@@ -1,31 +1,41 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import RegexTester from '../src/features/regexTester/components/organisms/RegexTester';
+import { initRegexTable } from '../src/features/regexTester/store/regexDbService';
 
 export default function RegexTesterScreen() {
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  try {
-    if (hasError) {
-      return (
-        <View style={[styles.container, styles.center]}>
-          <Text style={styles.errorText}>Ocurrió un error al renderizar.</Text>
-          <Text style={styles.errorMessage}>{errorMessage}</Text>
-        </View>
-      );
-    }
+  useEffect(() => {
+    (async () => {
+      try {
+        await initRegexTable();
+        // Si quieres hacer pruebas de guardar y leer aquí, agrégalas:
+        // await saveRegex('^[a-z]+$', 'Solo letras minúsculas', 0);
+        // const todas = await getAllRegexes();
+        // console.log('Expresiones guardadas:', todas);
+      } catch (error: any) {
+        setHasError(true);
+        setErrorMessage(error?.message || 'Error inicializando la base de datos');
+      }
+    })();
+  }, []);
 
+  if (hasError) {
     return (
-      <View style={styles.container}>
-        <RegexTester />
+      <View style={[styles.container, styles.center]}>
+        <Text style={styles.errorText}>Ocurrió un error al inicializar.</Text>
+        <Text style={styles.errorMessage}>{errorMessage}</Text>
       </View>
     );
-  } catch (error: any) {
-    setHasError(true);
-    setErrorMessage(error?.message || 'Error desconocido');
-    return null;
   }
+
+  return (
+    <View style={styles.container}>
+      <RegexTester />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
