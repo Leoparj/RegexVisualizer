@@ -18,25 +18,3 @@ export async function initRegexTable() {
     );`
   );
 }
-
-// Guardar una expresión
-export async function saveRegex(pattern: string, description = '', isFavorite = 0) {
-  const db = await getDb();
-  await db.runAsync(
-    'INSERT INTO saved_regex (pattern, description, isFavorite) VALUES (?, ?, ?);',
-    [pattern, description, isFavorite]
-  );
-}
-
-// Obtener todas las expresiones
-export async function getAllRegexes() {
-  const db = await getDb();
-  const { rows } = await db.getAllAsync('SELECT * FROM saved_regex ORDER BY createdAt DESC;');
-  return rows;
-}
-
-// Eliminar una expresión por id
-export async function deleteRegex(id: number) {
-  const db = await getDb();
-  await db.runAsync('DELETE FROM saved_regex WHERE id = ?;', [id]);
-}

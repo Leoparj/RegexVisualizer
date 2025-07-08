@@ -18,6 +18,7 @@ import {
 // 1) Ahora importamos el store de Zustand, no el viewModel
 import { useRegexStore } from '../../store/useRegexStore';
 
+
 // Componentes atómicos
 import LabeledInput from '../atoms/LabeledInput';
 import RegexSearchBar from '../atoms/RegexSearchBar';
@@ -50,18 +51,18 @@ export default function RegexTester() {
   } = useRegexStore();
 
   const [searchTerm, setSearchTerm] = useState<string>('');
-
+  
   const examples: Example[] = [
     { name: 'Correo electrónico', pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}' },
-    { name: 'URL (http/https)',   pattern: 'https?:\\/\\/(?:www\\.)?[^\\s\\/$.?#].[^\\s]*' },
-    { name: 'Teléfono intl.',      pattern: '\\+[1-9]\\d{1,14}' },
-    { name: 'Fecha DD/MM/AAAA',    pattern: '(0[1-9]|[12]\\d|3[01])\\/(0[1-9]|1[0-2])\\/\\d{4}' },
-    { name: 'IPv4',                pattern: '((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)' },
-    { name: 'Hex Color',           pattern: '#(?:[0-9A-Fa-f]{3}){1,2}' },
-    { name: 'Pwd fuerte',          pattern: '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}' },
-    { name: 'Solo dígitos',        pattern: '\\d+' },
-    { name: 'Palabra completa',    pattern: '\\bpalabra\\b' },
-    { name: 'HTML simple',         pattern: '<([A-Za-z][A-Za-z0-9]*)\\b[^>]*>(.*?)<\\/\\1>' },
+    { name: 'URL (http/https)', pattern: 'https?:\\/\\/(?:www\\.)?[^\\s\\/$.?#].[^\\s]*' },
+    { name: 'Teléfono intl.', pattern: '\\+[1-9]\\d{1,14}' },
+    { name: 'Fecha DD/MM/AAAA', pattern: '(0[1-9]|[12]\\d|3[01])\\/(0[1-9]|1[0-2])\\/\\d{4}' },
+    { name: 'IPv4', pattern: '((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)' },
+    { name: 'Hex Color', pattern: '#(?:[0-9A-Fa-f]{3}){1,2}' },
+    { name: 'Pwd fuerte', pattern: '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}' },
+    { name: 'Solo dígitos', pattern: '\\d+' },
+    { name: 'Palabra completa', pattern: '\\bpalabra\\b' },
+    { name: 'HTML simple', pattern: '<([A-Za-z][A-Za-z0-9]*)\\b[^>]*>(.*?)<\\/\\1>' },
   ];
 
   const renderList = (
@@ -164,7 +165,8 @@ export default function RegexTester() {
       <RegexSearchBar value={searchTerm} onChange={setSearchTerm} dark={isDark} />
 
       {renderList('⭐ Favoritas', favs)}
-      {renderList('🕘 Historial', history)}
+
+      {renderList('🕘 Historial', history ?? [])}
 
       <View style={styles.examplesContainer}>
         <Text style={styles.examplesTitle}>Ejemplos rápidos:</Text>

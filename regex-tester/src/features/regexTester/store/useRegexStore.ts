@@ -10,6 +10,13 @@ import {
   shareSingleRegex,
 } from '../../services/regexStorage';
 
+import {
+  addToHistory,
+  clearHistoryDb,
+  getHistory,
+  initRegexHistoryTable,
+} from './regexHistoryDbService';
+
 type State = {
   regex: string;
   input: string;
@@ -30,6 +37,7 @@ type State = {
   exportAll: () => Promise<void>;
   importAll: () => Promise<void>;
   shareExpr: (expr: string) => Promise<void>;
+  loadHistory: () => Promise<void>;
 };
 
 export const useRegexStore = create<State>()(
@@ -44,31 +52,41 @@ export const useRegexStore = create<State>()(
       favs: [],
 
       // ───────── setRegexInput ─────────
-      setRegexInput: (newRegex, newInput) => {
-        set({ regex: newRegex, input: newInput, ast: parseRegexToAST(newRegex) });
+setRegexInput: (newRegex, newInput) => {
+  set({ regex: newRegex, input: newInput, ast: parseRegexToAST(newRegex) });
 
-        const { _interval, _idle } = get();
+  const { _interval, _idle } = get();
 
-        // Iniciar intervalo si no existe
-        if (!_interval) {
-          const id = setInterval(() => {
-            const { regex: curr, history: h } = get();
-            if (!curr || h.includes(curr)) return;
-            const updated = [curr, ...h];
-            set({ history: updated });
-            AsyncStorage.setItem('regexHistory', JSON.stringify(updated));
-          }, 5000);
-          set({ _interval: id });
-        }
+  // Guarda la expresión al historial (cada 5s)
+  // Solo inicia un nuevo intervalo si no hay uno activo
+  if (!_interval) {
+    const id = setInterval(() => {
+      const { regex } = get();
+      if (regex?.trim()) {
+        addToHistory(regex.trim()).then(() => {
+          get().loadHistory();
+        });
+      }
+    }, 5000); // cada 5 segundos
+    set({ _interval: id });
+  }
 
-        // Reiniciar timeout de inactividad
-        if (_idle) clearTimeout(_idle);
-        const idleId = setTimeout(() => {
-          const { _interval: iv } = get();
-          if (iv) clearInterval(iv);
-          set({ _interval: undefined, _idle: undefined });
-        }, 10000);
-        set({ _idle: idleId });
+  // Reinicia el timeout de inactividad a 10 segundos
+  if (_idle) clearTimeout(_idle);
+  const idleId = setTimeout(() => {
+    const { _interval: iv } = get();
+    if (iv) clearInterval(iv);
+    set({ _interval: undefined, _idle: undefined });
+  }, 10000);
+  set({ _idle: idleId });
+},
+
+
+      // ───────── loadHistory (nuevo) ─────────
+      loadHistory: async () => {
+        await initRegexHistoryTable();
+        const patterns = await getHistory();
+        set({ history: patterns });
       },
 
       // ───────── saveRegex ─────────
@@ -101,9 +119,7 @@ export const useRegexStore = create<State>()(
 
       // ───────── clearHistory ─────────
       clearHistory: () => {
-        const kept = get().history.filter(e => get().favs.includes(e));
-        set({ history: kept });
-        AsyncStorage.setItem('regexHistory', JSON.stringify(kept));
+        clearHistoryDb().then(() => set({ history: [] }));
       },
 
       // ───────── toggleFav ─────────

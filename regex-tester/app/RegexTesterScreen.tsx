@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import RegexTester from '../src/features/regexTester/components/organisms/RegexTester';
 import { initRegexTable } from '../src/features/regexTester/store/regexDbService';
+import { useRegexStore } from '../src/features/regexTester/store/useRegexStore'; // Importa el store
 
 export default function RegexTesterScreen() {
   const [hasError, setHasError] = useState(false);
@@ -15,6 +16,8 @@ export default function RegexTesterScreen() {
         // await saveRegex('^[a-z]+$', 'Solo letras minúsculas', 0);
         // const todas = await getAllRegexes();
         // console.log('Expresiones guardadas:', todas);
+        // --- Importante: cargar historial también ---
+        await useRegexStore.getState().loadHistory();
       } catch (error: any) {
         setHasError(true);
         setErrorMessage(error?.message || 'Error inicializando la base de datos');
